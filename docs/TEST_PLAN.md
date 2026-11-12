@@ -86,3 +86,4 @@ The KIA Grant Management System 2.0 enforces strict operational accountability a
 - **Action:** Transactional email provider returns HTTP 500.
 - **Expected Flow:** System logs failure in `automation_executions` -> Retries with exponential backoff -> Prevents duplicate notification if successful on retry.
 - **Pass Criteria:** Idempotency preserved; no duplicate emails sent to client.
+

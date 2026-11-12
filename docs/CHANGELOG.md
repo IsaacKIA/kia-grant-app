@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0-phase1] - 2026-11-12
+
+### Added
+- **Supabase Client & Local Service Layer (`src/lib/supabase.js`)**: Direct typed client for PostgreSQL with automatic fallback adapter for offline development.
+- **PostgreSQL Core Schema Migration (`supabase/migrations/20261112000001_core_schema.sql`)**: 32 relational tables, custom enums, foreign keys, and triggers.
+- **Staff Authentication & RBAC Switcher (`src/services/authService.js`, `src/components/RoleSwitcherBar.jsx`)**: Active session management across 5 roles (CEO Kwame Boateng, Team Leader Abena Osei, Officers Kofi Mensah and Efua Addo, Finance Officer Emmanuel Darko).
+- **Client Relationship Management (CRM) (`src/services/crmService.js`, `src/components/CrmCasesView.jsx`)**: Centralized repository of applicant organizations, contact information, case status tracking, and duplicate client detection.
+- **Multi-Step Client Intake Wizard (`src/components/NewClientIntakeModal.jsx`)**: Professional 3-step registration wizard (Organization -> Founder -> Assignment/Fee) strictly eliminating synthetic default scores.
+- **Client Case Dossier (`src/components/CaseDossierModal.jsx`)**: Replaced prototype modal with full tabbed case manager (Overview, Mandatory Action Plan, Engagement Fee Ledger & Verification, Tasks, Audit History).
+- **Team Tasks & Escalation Engine (`src/services/taskService.js`, `src/components/TasksView.jsx`)**: Complete operational workbench with "My Tasks", "Due Today", "Overdue", and automated Level 1 (Team Leader, 1d) and Level 2 (CEO, 3d) escalations with mandatory completion evidence.
+- **CEO Management Control Center (`src/services/dashboardService.js`, `src/components/CeoDashboardView.jsx`)**: 30-second operational radar tracking active velocity, overdue workload, inactivity flags (>7d), verified fee revenue, and staff workload distribution.
+- **Legacy Client Recovery Desk (`src/services/legacyRecoveryService.js`, `src/components/LegacyRecoveryView.jsx`)**: Quarantined staging and audit workbench for the 14 baseline clients, enabling structured evidence reconciliation before live case activation.
+- **Immutable Audit Service (`src/services/auditService.js`)**: Real-time logging of user actions, state transitions, fee verifications, and case reassignments.
+
 ## [2.0.0-phase0] - 2026-11-12
 
 ### Added
@@ -23,3 +37,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Identified 14 hardcoded legacy clients in `src/data/initialClients.js` requiring migration staging and manual evidence verification before live activation.
 - Flagged unverified `commitmentFeePaid` flags and default readiness score injection in `NewClientModal.jsx`.
 - Verified that existing build compiles cleanly with zero errors via Vite 8.3.
+

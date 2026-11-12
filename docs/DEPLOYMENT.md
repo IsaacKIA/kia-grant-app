@@ -102,3 +102,4 @@ SELECT cron.schedule(
 - **Point-in-Time Recovery (PITR):** Available for production database to restore to any second within 7 days.
 - **Monthly Recovery Drill:** Staff test restoring database snapshots into a staging environment to guarantee recovery viability.
 - **Data Retention Policy:** In compliance with Act 843, client files for closed cases are archived for 7 years for tax and audit compliance, after which they are flagged for secure cryptographic destruction.
+

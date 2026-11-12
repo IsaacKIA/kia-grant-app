@@ -603,3 +603,4 @@ CREATE TABLE legacy_migration_staging (
    ```
 2. **Audit Event Trigger:** Key state transitions on `payments`, `case_document_requirements`, and `applications` automatically log entries into `audit_events`.
 3. **Case Inactivity Trigger:** When tasks or documents are modified for a case, `cases.last_activity_at` updates automatically to prevent false inactivity alerts.
+

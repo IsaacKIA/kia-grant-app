@@ -142,3 +142,4 @@ flowchart TD
 ### Inactivity Detection:
 - Active cases with no logged audit events, document updates, or task completions for >7 days trigger a warning to the officer.
 - Cases inactive for >14 days are flagged on the CEO Dashboard as **Bottlenecks Requiring Intervention**.
+

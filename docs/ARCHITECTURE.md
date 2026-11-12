@@ -126,3 +126,4 @@ A server-side cron / background automation engine executes periodically (e.g., h
 3. **No Direct Public File URLs:** All documents are stored in private storage buckets; download links are short-lived signed URLs generated on-demand with audit logging.
 4. **Financial Tamper Resistance:** Recorded payments cannot be marked "verified" by the officer handling the case; only authorized Finance/CEO roles can verify funds.
 5. **Reversible Soft Deletes:** Critical business entities use soft deletes (`is_deleted` and `deleted_at`) with strict audit logging to prevent accidental data destruction.
+

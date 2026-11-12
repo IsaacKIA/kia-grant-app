@@ -115,3 +115,4 @@ The `audit_events` table maintains an immutable ledger of critical system operat
 - Every payment verification, document rejection, readiness score change, application QA approval, and task reassignment creates an audit event.
 - Captured metadata: Actor ID, role, action, target entity, timestamp, IP address, user agent, before-and-after JSON state snapshots.
 - Direct updates or deletions on `audit_events` are blocked by PostgreSQL database triggers.
+

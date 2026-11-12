@@ -1,86 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import RoleSwitcherBar from './components/RoleSwitcherBar';
+import CeoDashboardView from './components/CeoDashboardView';
+import CrmCasesView from './components/CrmCasesView';
+import TasksView from './components/TasksView';
+import LegacyRecoveryView from './components/LegacyRecoveryView';
 import PipelineView from './components/PipelineView';
 import ReadinessCalculator from './components/ReadinessCalculator';
 import GrantMatcher from './components/GrantMatcher';
 import PrintableReport from './components/PrintableReport';
-import ClientDetailModal from './components/ClientDetailModal';
-import NewClientModal from './components/NewClientModal';
+import CaseDossierModal from './components/CaseDossierModal';
+import NewClientIntakeModal from './components/NewClientIntakeModal';
+
+import { authService } from './services/authService';
+import { crmService } from './services/crmService';
+import { taskService } from './services/taskService';
+import { dashboardService } from './services/dashboardService';
 import { INITIAL_CLIENTS } from './data/initialClients';
-import { calculateReadiness } from './data/criteria';
 
 export default function App() {
-  const [clients, setClients] = useState(() => {
+  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
+  const [cases, setCases] = useState(() => crmService.getCases());
+  const [activeTab, setActiveTab] = useState('ceo_dashboard');
+  
+  // Modals
+  const [selectedCaseForDossier, setSelectedCaseForDossier] = useState(null);
+  const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  
+  // Pipeline & legacy compatibility state
+  const [legacyClients, setLegacyClients] = useState(() => {
     const saved = localStorage.getItem('kia_clients_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.length >= INITIAL_CLIENTS.length) {
-          return parsed;
-        }
+        if (parsed.length >= INITIAL_CLIENTS.length) return parsed;
       } catch (e) {
         console.error('Failed to parse saved clients:', e);
       }
     }
     return INITIAL_CLIENTS;
   });
-
-  const [activeTab, setActiveTab] = useState('pipeline');
-  const [selectedClientForModal, setSelectedClientForModal] = useState(null);
   const [selectedClientForCalc, setSelectedClientForCalc] = useState(null);
-  const [isNewClientOpen, setIsNewClientOpen] = useState(false);
 
-  // Sync to localStorage
+  // Sync legacy clients
   useEffect(() => {
-    localStorage.setItem('kia_clients_v2', JSON.stringify(clients));
-  }, [clients]);
+    localStorage.setItem('kia_clients_v2', JSON.stringify(legacyClients));
+  }, [legacyClients]);
 
-  // Aggregate Metrics
-  const totalClients = clients.length;
-  const totalFees = clients.filter(c => c.commitmentFeePaid).length * 200;
-  const avgScore = Math.round(
-    clients.reduce((acc, c) => acc + calculateReadiness(c.scores).totalScore, 0) / (totalClients || 1)
-  );
+  const refreshAllState = () => {
+    setCases(crmService.getCases());
+  };
 
-  // Handlers
+  const handleSwitchUser = (userId) => {
+    const updated = authService.setCurrentUser(userId);
+    setCurrentUser(updated);
+  };
+
+  // Metrics
+  const ceoMetrics = dashboardService.getCeoMetrics();
+
+  // Handlers for legacy/pipeline views
   const handleUpdateStage = (clientId, newStage) => {
-    setClients(prev => prev.map(c => c.id === clientId ? { ...c, stage: newStage } : c));
+    setLegacyClients(prev => prev.map(c => c.id === clientId ? { ...c, stage: newStage } : c));
   };
 
   const handleSaveScores = (clientId, newScores) => {
-    setClients(prev => prev.map(c => {
+    setLegacyClients(prev => prev.map(c => {
       if (c.id === clientId) {
-        const read = calculateReadiness(newScores);
-        // Automatically check off readiness score assigned if score > 0
-        const updatedChecklist = {
-          ...c.checklist,
-          initialAssessmentDone: true,
-          regVerified: newScores.legal_reg >= 4,
-          bizPlanDrafted: newScores.doc_plan >= 4,
-          financialProjections: newScores.fin_projections >= 4
-        };
         return {
           ...c,
           scores: newScores,
-          checklist: updatedChecklist
+          checklist: {
+            ...c.checklist,
+            initialAssessmentDone: true
+          }
         };
       }
       return c;
     }));
   };
 
-  const handleSaveClient = (updatedClient) => {
-    setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
-  };
-
-  const handleAddClient = (newClient) => {
-    setClients(prev => [newClient, ...prev]);
-    setSelectedClientForCalc(newClient);
-    setActiveTab('calculator');
-  };
-
   const handleUpdatePriorityGrants = (clientId, priorityList) => {
-    setClients(prev => prev.map(c => c.id === clientId ? { ...c, priorityGrants: priorityList } : c));
+    setLegacyClients(prev => prev.map(c => c.id === clientId ? { ...c, priorityGrants: priorityList } : c));
   };
 
   const handleOpenCalculatorForClient = (client) => {
@@ -96,77 +97,141 @@ export default function App() {
     setActiveTab('reports');
   };
 
+  const handleClientRegistered = (newCase) => {
+    refreshAllState();
+    setSelectedCaseForDossier(newCase);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Top Navbar */}
+      {/* Simulated RBAC Role Switcher Bar */}
+      <RoleSwitcherBar
+        currentUser={currentUser}
+        onSwitchUser={handleSwitchUser}
+      />
+
+      {/* Main Navbar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        clientCount={totalClients}
-        avgScore={avgScore}
-        totalFees={totalFees}
+        clientCount={cases.length}
+        verifiedFees={ceoMetrics.verifiedFeesAmount}
+        overdueTasksCount={ceoMetrics.overdueTasksCount}
         onOpenNewClient={() => setIsNewClientOpen(true)}
       />
 
-      {/* Main Container */}
+      {/* Main Workspace View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* TAB 1: CEO Dashboard */}
+        {activeTab === 'ceo_dashboard' && (
+          <CeoDashboardView
+            onNavigateTab={(tab) => setActiveTab(tab)}
+            onOpenNewClient={() => setIsNewClientOpen(true)}
+          />
+        )}
+
+        {/* TAB 2: CRM Cases */}
+        {activeTab === 'crm_cases' && (
+          <CrmCasesView
+            onSelectCase={(c) => setSelectedCaseForDossier(c)}
+            onOpenNewClient={() => setIsNewClientOpen(true)}
+          />
+        )}
+
+        {/* TAB 3: Tasks & Accountability */}
+        {activeTab === 'tasks' && (
+          <TasksView />
+        )}
+
+        {/* TAB 4: Pipeline View */}
         {activeTab === 'pipeline' && (
           <PipelineView
-            clients={clients}
-            onSelectClient={(c) => setSelectedClientForModal(c)}
+            clients={legacyClients}
+            onSelectClient={(c) => {
+              // Map to case dossier if match exists
+              const matchedCase = cases.find(cs => cs.tradingName.toLowerCase().includes(c.businessName.toLowerCase()));
+              if (matchedCase) {
+                setSelectedCaseForDossier(matchedCase);
+              } else {
+                setSelectedCaseForDossier({
+                  id: c.id,
+                  caseNumber: `LEGACY-${c.id}`,
+                  legalName: c.businessName,
+                  tradingName: c.businessName,
+                  applicantType: 'SME',
+                  sector: c.sector,
+                  businessStage: 'Operational',
+                  region: 'Greater Accra',
+                  primaryContact: { fullName: c.clientName, phone: '+233 24 000 0000', email: '' },
+                  currentOfficerId: 'staff-03',
+                  status: 'documentation',
+                  onboardingDate: c.dateOnboarded,
+                  lastActivityAt: new Date().toISOString(),
+                  nextActionDescription: 'Reconcile legacy records and issue checklist.',
+                  nextActionDueDate: new Date().toISOString().split('T')[0],
+                  engagementFee: { amountDue: 200, amountPaid: c.commitmentFeePaid ? 200 : 0, isVerified: false, invoiceNumber: 'LEGACY-INV' }
+                });
+              }
+            }}
             onOpenCalculator={handleOpenCalculatorForClient}
             onOpenNewClient={() => setIsNewClientOpen(true)}
             onUpdateClientStage={handleUpdateStage}
           />
         )}
 
+        {/* TAB 5: Readiness Calculator */}
         {activeTab === 'calculator' && (
           <ReadinessCalculator
-            clients={clients}
+            clients={legacyClients}
             selectedClient={selectedClientForCalc}
             onSaveScores={handleSaveScores}
             onExportReport={handleExportReportForClient}
           />
         )}
 
+        {/* TAB 6: Grant Matcher */}
         {activeTab === 'matcher' && (
           <GrantMatcher
-            clients={clients}
+            clients={legacyClients}
             onUpdatePriorityGrants={handleUpdatePriorityGrants}
           />
         )}
 
+        {/* TAB 7: Diagnostic Reports */}
         {activeTab === 'reports' && (
           <PrintableReport
-            clients={clients}
+            clients={legacyClients}
             selectedClient={selectedClientForCalc}
-            onBack={() => setActiveTab('pipeline')}
+            onBack={() => setActiveTab('ceo_dashboard')}
+          />
+        )}
+
+        {/* TAB 8: Legacy Client Recovery */}
+        {activeTab === 'legacy_recovery' && (
+          <LegacyRecoveryView
+            onReconciledCase={refreshAllState}
           />
         )}
       </main>
 
       {/* Footer */}
       <footer className="no-print bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        <p>© 2026 KIA-START UP CONSULT • Grant Advisory & Readiness Practice • Confidential & Proprietary</p>
+        <p>© 2026 KIA-START UP CONSULT • Accra, Ghana • Grant Advisory & Readiness Practice • Confidential & Proprietary</p>
       </footer>
 
       {/* Modals */}
-      {selectedClientForModal && (
-        <ClientDetailModal
-          client={selectedClientForModal}
-          onClose={() => setSelectedClientForModal(null)}
-          onSaveClient={handleSaveClient}
-          onOpenCalculator={(c) => {
-            setSelectedClientForModal(null);
-            handleOpenCalculatorForClient(c);
-          }}
+      {selectedCaseForDossier && (
+        <CaseDossierModal
+          initialCase={selectedCaseForDossier}
+          onClose={() => setSelectedCaseForDossier(null)}
+          onCaseUpdated={refreshAllState}
         />
       )}
 
-      <NewClientModal
+      <NewClientIntakeModal
         isOpen={isNewClientOpen}
         onClose={() => setIsNewClientOpen(false)}
-        onAddClient={handleAddClient}
+        onClientRegistered={handleClientRegistered}
       />
     </div>
   );
