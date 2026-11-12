@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0-final] - 2026-11-12
+
+### Added
+- **Automated End-to-End Operational Verification Suite (`src/tests/e2eVerification.js`)**:
+  - Validates all 8 core business scenarios defined in `docs/TEST_PLAN.md` programmatically.
+  - 29 out of 29 operational assertions executed with 100% pass rate.
+  - Added `"test": "vite-node src/tests/e2eVerification.js"` to `package.json`.
+- **Standard Operational Runbook (`docs/OPERATIONAL_RUNBOOK.md`)**:
+  - Comprehensive standard operating procedures for Accra practice operations (Founder/CEO Kwame Boateng, Team Leader Abena Osei, Officers Kofi Mensah and Efua Addo, Finance Officer Emmanuel Darko).
+  - Protocols for daily morning review, client intake, document verification, readiness assessment, grant matching, internal QA gate, verifiable submission recording, fee reconciliation, and disaster recovery.
+- **Executive Handover Report**:
+  - Detailed system transformation documentation and architectural specifications prepared for executive leadership.
+
 ## [2.4.0-phase4] - 2026-11-12
 
 ### Added

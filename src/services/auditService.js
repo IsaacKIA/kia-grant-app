@@ -61,6 +61,16 @@ export const auditService = {
     return saveLocalAuditEvent(event);
   },
 
+  async logAction({ userId, action, entityType, entityId, details, notes = '' }) {
+    return this.logEvent({
+      entityType,
+      entityId,
+      action,
+      newState: details,
+      notes: notes || (typeof details === 'object' ? JSON.stringify(details) : String(details || ''))
+    });
+  },
+
   async getRecentAuditEvents(limit = 50, entityFilter = null) {
     if (isSupabaseConfigured && supabase) {
       try {

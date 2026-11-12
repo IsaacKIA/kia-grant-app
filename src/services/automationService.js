@@ -197,16 +197,16 @@ class AutomationService {
     // 3. SCAN CLIENTS FOR MISSING DOCUMENTS
     for (const c of cases) {
       if (c.status === 'archived') continue;
-      const progress = documentService.getCaseChecklistProgress(c.id);
+      const progress = documentService.calculateCompleteness(c.id);
       const onboardDate = new Date(c.onboardingDate || now);
       const daysSinceOnboarding = Math.floor((now.getTime() - onboardDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (daysSinceOnboarding >= 3 && progress.completenessPercentage < 100) {
+      if (daysSinceOnboarding >= 3 && progress.percentage < 100) {
         auditResults.documentChaseAlerts.push({
           caseId: c.id,
           clientName: c.tradingName,
-          completeness: progress.completenessPercentage,
-          missingCount: progress.missingCount,
+          completeness: progress.percentage,
+          missingCount: progress.missing,
           daysSinceOnboarding
         });
       }
@@ -241,3 +241,4 @@ class AutomationService {
 }
 
 export const automationService = new AutomationService();
+

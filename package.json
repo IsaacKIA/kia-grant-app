@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "test": "vite-node src/tests/e2eVerification.js",
     "preview": "vite preview"
   },
   "dependencies": {

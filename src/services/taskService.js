@@ -149,6 +149,11 @@ export const taskService = {
     return evaluated;
   },
 
+  getTasksByCaseId(caseId) {
+    const tasks = this.getTasks();
+    return tasks.filter(t => t.caseId === caseId);
+  },
+
   async createTask({ caseId, clientName, title, description, assignedToId, priority = 'medium', dueDate }) {
     const currentStaff = authService.getCurrentUser();
     const tasks = this.getTasks();

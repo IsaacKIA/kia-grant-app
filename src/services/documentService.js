@@ -307,7 +307,7 @@ export const documentService = {
       createdAt: new Date().toISOString(),
       expiresAt,
       isRevoked: false,
-      uploadUrl: `${window.location.origin}?token=${rawToken}`
+      uploadUrl: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}?token=${rawToken}`
     };
 
     const savedTokens = this.getAllTokens();
