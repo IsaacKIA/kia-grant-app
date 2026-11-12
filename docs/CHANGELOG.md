@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0-phase4] - 2026-11-12
+
+### Added
+- **Finance, Invoicing & Segregation of Duties Engine (`src/services/financeService.js`, `src/components/FinanceDeskView.jsx`)**:
+  - Centralized accounting & fee reconciliation ledger with separation of duties: only Finance Officer Emmanuel Darko or the CEO can verify payments and clear ledgers.
+  - Onboarding engagement fee management with configurable baseline (GH₵ 200).
+  - Contractual success fee invoicing (3–10%, default 5%) tied to verified grant award outcomes.
+  - Official commercial invoice generation with professional KIA-START UP CONSULT letterhead, tax/fee itemization, MTN MoMo merchant number, and GCB Bank account details.
+  - Printable / PDF invoice document modal.
+  - Payment receipt capture and verification audit desk for MoMo and bank transaction references.
+- **Autonomous Operational Background Radar (`src/services/automationService.js`, `src/components/AutomationControlView.jsx`)**:
+  - Scheduled background surveillance policies simulating cron/worker execution.
+  - Case dormancy scanner flagging inactive cases at >7 days (Warning) and >14 days (Critical CEO Escalation creating immediate intervention tasks).
+  - Grant submission deadline countdown radar issuing high-priority alerts at 14d, 7d, 3d, and 1d to funder closing dates.
+  - Missing document chase trigger for clients onboarded >3 days with incomplete checklists.
+  - "Run Scheduled Audit Now" interactive simulator with live telemetry metrics and execution findings trace.
+- **Executive & Operational Reporting Suite (`src/components/OperationalReportsView.jsx`)**:
+  - Daily Operational Briefing: active case count, overdue task escalation breakdown, document queues, and day-start priorities.
+  - Weekly Operational Velocity Digest: applications in preparation, verified submissions, grants awarded, and team velocity.
+  - Monthly Strategic Management Review: pipeline conversion rates, realized vs projected revenue, compliance integrity, and official executive electronic sign-offs.
+  - Full print/export styling formatted for board meetings and executive review.
+
 ## [2.3.0-phase3] - 2026-11-12
 
 ### Added

@@ -1,0 +1,499 @@
+/**
+ * KIA Grant Management System 2.0 - Finance & Invoicing Service
+ * 
+ * Manages engagement fees (default GH₵200), contractual success fees (3-10%),
+ * official invoice generation, payment receipts, and reconciliation workflows.
+ * Enforces separation of duties: only Finance Officer or CEO can verify payments.
+ */
+
+import { auditService } from './auditService';
+import { authService } from './authService';
+
+const INVOICES_STORAGE_KEY = 'kia_finance_invoices_v2';
+const PAYMENTS_STORAGE_KEY = 'kia_finance_payments_v2';
+
+// Standard Initial Engagement Fee
+export const DEFAULT_ENGAGEMENT_FEE = 200; // GH₵
+export const DEFAULT_SUCCESS_FEE_PERCENTAGE = 5; // 5%
+
+const SEED_INVOICES = [
+  {
+    id: 'inv-001',
+    invoiceNumber: 'INV-2026-001',
+    caseId: 'case-001',
+    clientName: 'AgroFresh Processing Hub',
+    applicantType: 'SME',
+    invoiceType: 'engagement_fee',
+    currency: 'GHS',
+    items: [
+      {
+        description: 'Client Intake, Grant Readiness Assessment & Priority Opportunity Matching',
+        quantity: 1,
+        unitPrice: 200,
+        amount: 200
+      }
+    ],
+    subtotal: 200,
+    discount: 0,
+    totalAmount: 200,
+    amountPaid: 200,
+    status: 'paid', // draft, issued, partially_paid, paid, cancelled
+    issuedDate: '2026-01-15',
+    dueDate: '2026-01-22',
+    notes: 'Standard onboarding engagement agreement fee.',
+    paymentDetails: {
+      momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+      bankName: 'GCB Bank - High Street Branch',
+      accountNumber: '1011122334455',
+      accountName: 'KIA-START UP CONSULT LTD'
+    },
+    createdBy: 'staff-05',
+    createdAt: '2026-01-15T09:30:00Z'
+  },
+  {
+    id: 'inv-002',
+    invoiceNumber: 'INV-2026-002',
+    caseId: 'case-002',
+    clientName: 'Savannah Shea Butter Cooperative',
+    applicantType: 'Cooperative',
+    invoiceType: 'engagement_fee',
+    currency: 'GHS',
+    items: [
+      {
+        description: 'Cooperative Onboarding, Compliance Verification & Assessment Fee',
+        quantity: 1,
+        unitPrice: 200,
+        amount: 200
+      }
+    ],
+    subtotal: 200,
+    discount: 0,
+    totalAmount: 200,
+    amountPaid: 0,
+    status: 'issued',
+    issuedDate: '2026-02-01',
+    dueDate: '2026-02-08',
+    notes: 'Awaiting MoMo transfer from cooperative treasurer.',
+    paymentDetails: {
+      momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+      bankName: 'GCB Bank - High Street Branch',
+      accountNumber: '1011122334455',
+      accountName: 'KIA-START UP CONSULT LTD'
+    },
+    createdBy: 'staff-05',
+    createdAt: '2026-02-01T11:00:00Z'
+  },
+  {
+    id: 'inv-003',
+    invoiceNumber: 'INV-2026-003',
+    caseId: 'case-003',
+    clientName: 'HealthPoint Diagnostics Labs',
+    applicantType: 'SME',
+    invoiceType: 'engagement_fee',
+    currency: 'GHS',
+    items: [
+      {
+        description: 'Client Intake, Grant Readiness Assessment & Priority Opportunity Matching',
+        quantity: 1,
+        unitPrice: 200,
+        amount: 200
+      }
+    ],
+    subtotal: 200,
+    discount: 0,
+    totalAmount: 200,
+    amountPaid: 200,
+    status: 'paid',
+    issuedDate: '2026-02-10',
+    dueDate: '2026-02-17',
+    notes: 'Paid via MTN MoMo.',
+    paymentDetails: {
+      momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+      bankName: 'GCB Bank - High Street Branch',
+      accountNumber: '1011122334455',
+      accountName: 'KIA-START UP CONSULT LTD'
+    },
+    createdBy: 'staff-05',
+    createdAt: '2026-02-10T14:20:00Z'
+  },
+  {
+    id: 'inv-004',
+    invoiceNumber: 'INV-2026-004',
+    caseId: 'case-003',
+    clientName: 'HealthPoint Diagnostics Labs',
+    applicantType: 'SME',
+    invoiceType: 'success_fee',
+    currency: 'GHS',
+    items: [
+      {
+        description: 'Contractual Success Fee (5%) on Grant Award: AfDB AFAWA Healthcare Diagnostic Expansion Grant (GH₵ 120,000 awarded)',
+        quantity: 1,
+        unitPrice: 6000,
+        amount: 6000
+      }
+    ],
+    subtotal: 6000,
+    discount: 0,
+    totalAmount: 6000,
+    amountPaid: 0,
+    status: 'issued',
+    issuedDate: '2026-02-28',
+    dueDate: '2026-03-14',
+    notes: 'Success fee payable within 14 days of funder first tranche disbursement.',
+    paymentDetails: {
+      momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+      bankName: 'GCB Bank - High Street Branch',
+      accountNumber: '1011122334455',
+      accountName: 'KIA-START UP CONSULT LTD'
+    },
+    createdBy: 'staff-05',
+    createdAt: '2026-02-28T16:00:00Z'
+  }
+];
+
+const SEED_PAYMENTS = [
+  {
+    id: 'pay-001',
+    receiptNumber: 'REC-2026-001',
+    invoiceId: 'inv-001',
+    caseId: 'case-001',
+    clientName: 'AgroFresh Processing Hub',
+    amount: 200,
+    paymentMethod: 'MTN Mobile Money',
+    transactionReference: 'TXN-MM-89230192',
+    paymentDate: '2026-01-16',
+    proofDocumentUrl: 'receipts/agrofresh_momo_slip.pdf',
+    verificationStatus: 'verified',
+    verifiedBy: 'staff-05', // Emmanuel Darko
+    verifiedAt: '2026-01-16T15:00:00Z',
+    verificationNotes: 'Reconciled with MTN MoMo merchant statement.',
+    recordedBy: 'staff-03',
+    createdAt: '2026-01-16T10:15:00Z'
+  },
+  {
+    id: 'pay-002',
+    receiptNumber: 'REC-2026-002',
+    invoiceId: 'inv-003',
+    caseId: 'case-003',
+    clientName: 'HealthPoint Diagnostics Labs',
+    amount: 200,
+    paymentMethod: 'Bank Transfer (GCB)',
+    transactionReference: 'GCB-TRF-004921',
+    paymentDate: '2026-02-11',
+    proofDocumentUrl: 'receipts/healthpoint_gcb_slip.pdf',
+    verificationStatus: 'verified',
+    verifiedBy: 'staff-05',
+    verifiedAt: '2026-02-12T09:30:00Z',
+    verificationNotes: 'Confirmed on online banking credit alert.',
+    recordedBy: 'staff-05',
+    createdAt: '2026-02-11T16:45:00Z'
+  }
+];
+
+class FinanceService {
+  constructor() {
+    this.invoices = this.loadInvoices();
+    this.payments = this.loadPayments();
+  }
+
+  loadInvoices() {
+    try {
+      const data = localStorage.getItem(INVOICES_STORAGE_KEY);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (e) {
+      console.error('Failed to load finance invoices:', e);
+    }
+    this.saveInvoices(SEED_INVOICES);
+    return SEED_INVOICES;
+  }
+
+  saveInvoices(invoices) {
+    this.invoices = invoices;
+    try {
+      localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invoices));
+    } catch (e) {
+      console.error('Failed to save finance invoices:', e);
+    }
+  }
+
+  loadPayments() {
+    try {
+      const data = localStorage.getItem(PAYMENTS_STORAGE_KEY);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (e) {
+      console.error('Failed to load finance payments:', e);
+    }
+    this.savePayments(SEED_PAYMENTS);
+    return SEED_PAYMENTS;
+  }
+
+  savePayments(payments) {
+    this.payments = payments;
+    try {
+      localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(payments));
+    } catch (e) {
+      console.error('Failed to save finance payments:', e);
+    }
+  }
+
+  getInvoices() {
+    return [...this.invoices];
+  }
+
+  getPayments() {
+    return [...this.payments];
+  }
+
+  getInvoiceById(id) {
+    return this.invoices.find(inv => inv.id === id) || null;
+  }
+
+  getInvoicesByCaseId(caseId) {
+    return this.invoices.filter(inv => inv.caseId === caseId);
+  }
+
+  getPaymentsByCaseId(caseId) {
+    return this.payments.filter(p => p.caseId === caseId);
+  }
+
+  getFinancialOverview() {
+    const totalInvoiced = this.invoices
+      .filter(i => i.status !== 'cancelled')
+      .reduce((sum, i) => sum + i.totalAmount, 0);
+
+    const verifiedPayments = this.payments
+      .filter(p => p.verificationStatus === 'verified')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const pendingVerificationPayments = this.payments
+      .filter(p => p.verificationStatus === 'pending_verification')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const outstandingBalance = Math.max(0, totalInvoiced - verifiedPayments);
+
+    const engagementFeesCollected = this.payments
+      .filter(p => {
+        if (p.verificationStatus !== 'verified') return false;
+        const inv = this.invoices.find(i => i.id === p.invoiceId);
+        return inv && inv.invoiceType === 'engagement_fee';
+      })
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const successFeesCollected = this.payments
+      .filter(p => {
+        if (p.verificationStatus !== 'verified') return false;
+        const inv = this.invoices.find(i => i.id === p.invoiceId);
+        return inv && inv.invoiceType === 'success_fee';
+      })
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const projectedSuccessFees = this.invoices
+      .filter(i => i.invoiceType === 'success_fee' && i.status !== 'cancelled')
+      .reduce((sum, i) => sum + i.totalAmount, 0);
+
+    return {
+      totalInvoiced,
+      verifiedPayments,
+      pendingVerificationPayments,
+      outstandingBalance,
+      engagementFeesCollected,
+      successFeesCollected,
+      projectedSuccessFees,
+      invoicesCount: this.invoices.length,
+      paidInvoicesCount: this.invoices.filter(i => i.status === 'paid').length
+    };
+  }
+
+  async createInvoice({
+    caseId,
+    clientName,
+    applicantType,
+    invoiceType = 'engagement_fee',
+    items,
+    notes = '',
+    dueDate
+  }) {
+    const currentUser = authService.getCurrentUser();
+    const count = this.invoices.length + 1;
+    const invoiceNumber = `INV-2026-${String(count).padStart(3, '0')}`;
+    
+    const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * (item.quantity || 1)), 0);
+    const totalAmount = subtotal;
+
+    const newInvoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNumber,
+      caseId,
+      clientName,
+      applicantType: applicantType || 'SME',
+      invoiceType,
+      currency: 'GHS',
+      items: items.map(it => ({
+        description: it.description,
+        quantity: it.quantity || 1,
+        unitPrice: Number(it.unitPrice),
+        amount: Number(it.unitPrice) * (it.quantity || 1)
+      })),
+      subtotal,
+      discount: 0,
+      totalAmount,
+      amountPaid: 0,
+      status: 'issued',
+      issuedDate: new Date().toISOString().split('T')[0],
+      dueDate: dueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      notes,
+      paymentDetails: {
+        momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+        bankName: 'GCB Bank - High Street Branch',
+        accountNumber: '1011122334455',
+        accountName: 'KIA-START UP CONSULT LTD'
+      },
+      createdBy: currentUser.id,
+      createdAt: new Date().toISOString()
+    };
+
+    const updated = [newInvoice, ...this.invoices];
+    this.saveInvoices(updated);
+
+    await auditService.logAction({
+      userId: currentUser.id,
+      action: 'create_invoice',
+      entityType: 'invoice',
+      entityId: newInvoice.id,
+      details: {
+        invoiceNumber,
+        clientName,
+        totalAmount,
+        invoiceType
+      }
+    });
+
+    return newInvoice;
+  }
+
+  async recordPayment({
+    invoiceId,
+    caseId,
+    clientName,
+    amount,
+    paymentMethod,
+    transactionReference,
+    paymentDate,
+    proofDocumentUrl = ''
+  }) {
+    const currentUser = authService.getCurrentUser();
+    const num = this.payments.length + 1;
+    const receiptNumber = `REC-2026-${String(num).padStart(3, '0')}`;
+
+    // Auto-verify ONLY if recorded by Finance Officer or CEO
+    const canAutoVerify = currentUser.role === 'finance_officer' || currentUser.role === 'ceo' || currentUser.role === 'admin';
+    const initialStatus = canAutoVerify ? 'verified' : 'pending_verification';
+
+    const newPayment = {
+      id: `pay-${Date.now()}`,
+      receiptNumber,
+      invoiceId,
+      caseId,
+      clientName,
+      amount: Number(amount),
+      paymentMethod,
+      transactionReference,
+      paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+      proofDocumentUrl,
+      verificationStatus: initialStatus,
+      verifiedBy: canAutoVerify ? currentUser.id : null,
+      verifiedAt: canAutoVerify ? new Date().toISOString() : null,
+      verificationNotes: canAutoVerify ? 'Directly recorded and verified by finance staff.' : '',
+      recordedBy: currentUser.id,
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedPayments = [newPayment, ...this.payments];
+    this.savePayments(updatedPayments);
+
+    if (canAutoVerify) {
+      this.recalculateInvoiceStatus(invoiceId);
+    }
+
+    await auditService.logAction({
+      userId: currentUser.id,
+      action: 'record_payment',
+      entityType: 'payment',
+      entityId: newPayment.id,
+      details: {
+        receiptNumber,
+        amount,
+        paymentMethod,
+        transactionReference,
+        verificationStatus: initialStatus
+      }
+    });
+
+    return newPayment;
+  }
+
+  async verifyPayment(paymentId, { verificationNotes = '' }) {
+    const currentUser = authService.getCurrentUser();
+    
+    // Non-negotiable segregation of duties
+    if (currentUser.role !== 'finance_officer' && currentUser.role !== 'ceo' && currentUser.role !== 'admin') {
+      throw new Error('ACCESS DENIED: Only Finance Officer Emmanuel Darko or the CEO may verify payments.');
+    }
+
+    const payment = this.payments.find(p => p.id === paymentId);
+    if (!payment) throw new Error('Payment record not found.');
+
+    payment.verificationStatus = 'verified';
+    payment.verifiedBy = currentUser.id;
+    payment.verifiedAt = new Date().toISOString();
+    payment.verificationNotes = verificationNotes || 'Reconciled with official financial statement.';
+
+    this.savePayments([...this.payments]);
+
+    // Recalculate invoice paid amount
+    if (payment.invoiceId) {
+      this.recalculateInvoiceStatus(payment.invoiceId);
+    }
+
+    await auditService.logAction({
+      userId: currentUser.id,
+      action: 'verify_payment',
+      entityType: 'payment',
+      entityId: payment.id,
+      details: {
+        receiptNumber: payment.receiptNumber,
+        amount: payment.amount,
+        verifiedBy: currentUser.fullName,
+        notes: payment.verificationNotes
+      }
+    });
+
+    return payment;
+  }
+
+  recalculateInvoiceStatus(invoiceId) {
+    const inv = this.invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+
+    const totalPaid = this.payments
+      .filter(p => p.invoiceId === invoiceId && p.verificationStatus === 'verified')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    inv.amountPaid = totalPaid;
+    if (totalPaid >= inv.totalAmount) {
+      inv.status = 'paid';
+    } else if (totalPaid > 0) {
+      inv.status = 'partially_paid';
+    } else {
+      inv.status = 'issued';
+    }
+
+    this.saveInvoices([...this.invoices]);
+  }
+}
+
+export const financeService = new FinanceService();

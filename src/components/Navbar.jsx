@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Activity, Users, CheckSquare, TrendingUp, Calculator, 
-  Target, FileText, Database, UserPlus, ShieldAlert, Clock, Award 
+  Target, FileText, Database, UserPlus, Clock, Award, DollarSign, Zap 
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -177,7 +177,33 @@ export default function Navbar({
             <span>Readiness Diagnostic</span>
           </button>
 
-          {/* Diagnostic Reports */}
+          {/* Finance & Fees */}
+          <button
+            onClick={() => setActiveTab('finance')}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'finance'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>Finance Desk</span>
+          </button>
+
+          {/* Automation Radar */}
+          <button
+            onClick={() => setActiveTab('automation')}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'automation'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Automation Radar</span>
+          </button>
+
+          {/* Operational Reports */}
           <button
             onClick={() => setActiveTab('reports')}
             className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
@@ -187,7 +213,7 @@ export default function Navbar({
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Diagnostic Reports</span>
+            <span>Operational Reports</span>
           </button>
 
           {/* Legacy Recovery */}

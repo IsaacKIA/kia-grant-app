@@ -14,10 +14,12 @@ import CaseDossierModal from './components/CaseDossierModal';
 import NewClientIntakeModal from './components/NewClientIntakeModal';
 import ApplicationPipelineView from './components/ApplicationPipelineView';
 import GrantCatalogueView from './components/GrantCatalogueView';
+import FinanceDeskView from './components/FinanceDeskView';
+import AutomationControlView from './components/AutomationControlView';
+import OperationalReportsView from './components/OperationalReportsView';
 
 import { authService } from './services/authService';
 import { crmService } from './services/crmService';
-import { taskService } from './services/taskService';
 import { dashboardService } from './services/dashboardService';
 import { documentService } from './services/documentService';
 import { INITIAL_CLIENTS } from './data/initialClients';
@@ -208,21 +210,35 @@ export default function App() {
               />
             )}
 
-            {/* TAB 9: Diagnostic Reports */}
-            {activeTab === 'reports' && (
-              <PrintableReport
-                clients={legacyClients}
-                selectedClient={selectedClientForCalc}
-                onBack={() => setActiveTab('ceo_dashboard')}
-              />
+            {/* TAB 9: Finance Desk */}
+            {activeTab === 'finance' && (
+              <FinanceDeskView />
             )}
 
-        {/* TAB 8: Legacy Client Recovery */}
-        {activeTab === 'legacy_recovery' && (
-          <LegacyRecoveryView
-            onReconciledCase={refreshAllState}
-          />
-        )}
+            {/* TAB 10: Automation Radar */}
+            {activeTab === 'automation' && (
+              <AutomationControlView />
+            )}
+
+            {/* TAB 11: Operational Reports */}
+            {activeTab === 'reports' && (
+              selectedClientForCalc ? (
+                <PrintableReport
+                  clients={legacyClients}
+                  selectedClient={selectedClientForCalc}
+                  onBack={() => setSelectedClientForCalc(null)}
+                />
+              ) : (
+                <OperationalReportsView />
+              )
+            )}
+
+            {/* TAB 12: Legacy Client Recovery */}
+            {activeTab === 'legacy_recovery' && (
+              <LegacyRecoveryView
+                onReconciledCase={refreshAllState}
+              />
+            )}
       </main>
 
       {/* Footer */}
