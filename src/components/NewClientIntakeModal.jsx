@@ -471,3 +471,4 @@ export default function NewClientIntakeModal({ isOpen, onClose, onClientRegister
     </div>
   );
 }
+

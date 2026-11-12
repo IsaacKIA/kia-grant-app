@@ -9,6 +9,8 @@ import PipelineView from './components/PipelineView';
 import ReadinessCalculator from './components/ReadinessCalculator';
 import GrantMatcher from './components/GrantMatcher';
 import PrintableReport from './components/PrintableReport';
+import DocumentHubView from './components/DocumentHubView';
+import ClientUploadPortal from './components/ClientUploadPortal';
 import CaseDossierModal from './components/CaseDossierModal';
 import NewClientIntakeModal from './components/NewClientIntakeModal';
 
@@ -16,12 +18,19 @@ import { authService } from './services/authService';
 import { crmService } from './services/crmService';
 import { taskService } from './services/taskService';
 import { dashboardService } from './services/dashboardService';
+import { documentService } from './services/documentService';
 import { INITIAL_CLIENTS } from './data/initialClients';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
   const [cases, setCases] = useState(() => crmService.getCases());
   const [activeTab, setActiveTab] = useState('ceo_dashboard');
+  
+  // Client upload token (from URL query string or simulation)
+  const [clientUploadToken, setClientUploadToken] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('token') || null;
+  });
   
   // Modals
   const [selectedCaseForDossier, setSelectedCaseForDossier] = useState(null);
@@ -58,6 +67,7 @@ export default function App() {
 
   // Metrics
   const ceoMetrics = dashboardService.getCeoMetrics();
+  const underReviewDocsCount = documentService.getCaseRequirements().filter(r => r.status === 'under_review' || r.status === 'uploaded').length;
 
   // Handlers for legacy/pipeline views
   const handleUpdateStage = (clientId, newStage) => {
@@ -104,47 +114,70 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Simulated RBAC Role Switcher Bar */}
-      <RoleSwitcherBar
-        currentUser={currentUser}
-        onSwitchUser={handleSwitchUser}
-      />
+      {/* If viewing as a client via upload token link */}
+      {clientUploadToken ? (
+        <ClientUploadPortal
+          token={clientUploadToken}
+          onExitPortal={() => {
+            setClientUploadToken(null);
+            // clear search param if in URL
+            if (window.location.search.includes('token=')) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* Simulated RBAC Role Switcher Bar */}
+          <RoleSwitcherBar
+            currentUser={currentUser}
+            onSwitchUser={handleSwitchUser}
+          />
 
-      {/* Main Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        clientCount={cases.length}
-        verifiedFees={ceoMetrics.verifiedFeesAmount}
-        overdueTasksCount={ceoMetrics.overdueTasksCount}
-        onOpenNewClient={() => setIsNewClientOpen(true)}
-      />
-
-      {/* Main Workspace View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* TAB 1: CEO Dashboard */}
-        {activeTab === 'ceo_dashboard' && (
-          <CeoDashboardView
-            onNavigateTab={(tab) => setActiveTab(tab)}
+          {/* Main Navbar */}
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            clientCount={cases.length}
+            verifiedFees={ceoMetrics.verifiedFeesAmount}
+            overdueTasksCount={ceoMetrics.overdueTasksCount}
+            underReviewDocsCount={underReviewDocsCount}
             onOpenNewClient={() => setIsNewClientOpen(true)}
           />
-        )}
 
-        {/* TAB 2: CRM Cases */}
-        {activeTab === 'crm_cases' && (
-          <CrmCasesView
-            onSelectCase={(c) => setSelectedCaseForDossier(c)}
-            onOpenNewClient={() => setIsNewClientOpen(true)}
-          />
-        )}
+          {/* Main Workspace View Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* TAB 1: CEO Dashboard */}
+            {activeTab === 'ceo_dashboard' && (
+              <CeoDashboardView
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenNewClient={() => setIsNewClientOpen(true)}
+              />
+            )}
 
-        {/* TAB 3: Tasks & Accountability */}
-        {activeTab === 'tasks' && (
-          <TasksView />
-        )}
+            {/* TAB 2: CRM Cases */}
+            {activeTab === 'crm_cases' && (
+              <CrmCasesView
+                onSelectCase={(c) => setSelectedCaseForDossier(c)}
+                onOpenNewClient={() => setIsNewClientOpen(true)}
+              />
+            )}
 
-        {/* TAB 4: Pipeline View */}
-        {activeTab === 'pipeline' && (
+            {/* TAB 3: Documents Hub */}
+            {activeTab === 'documents' && (
+              <DocumentHubView
+                onSelectCase={(c) => setSelectedCaseForDossier(c)}
+                onOpenClientPortalSim={(tok) => setClientUploadToken(tok)}
+              />
+            )}
+
+            {/* TAB 4: Tasks & Accountability */}
+            {activeTab === 'tasks' && (
+              <TasksView />
+            )}
+
+            {/* TAB 5: Pipeline View */}
+            {activeTab === 'pipeline' && (
           <PipelineView
             clients={legacyClients}
             onSelectClient={(c) => {
@@ -233,6 +266,8 @@ export default function App() {
         onClose={() => setIsNewClientOpen(false)}
         onClientRegistered={handleClientRegistered}
       />
+        </>
+      )}
     </div>
   );
 }

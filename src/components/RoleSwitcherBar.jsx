@@ -39,3 +39,4 @@ export default function RoleSwitcherBar({ currentUser, onSwitchUser }) {
     </div>
   );
 }
+

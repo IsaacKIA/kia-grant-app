@@ -10,6 +10,7 @@ export default function Navbar({
   clientCount, 
   verifiedFees, 
   overdueTasksCount, 
+  underReviewDocsCount = 0,
   onOpenNewClient 
 }) {
   return (
@@ -90,6 +91,22 @@ export default function Navbar({
           >
             <Users className="w-3.5 h-3.5" />
             <span>Client CRM ({clientCount})</span>
+          </button>
+
+          {/* Documents Hub */}
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'documents'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Documents Hub</span>
+            {underReviewDocsCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1" />
+            )}
           </button>
 
           {/* Tasks Workbench */}

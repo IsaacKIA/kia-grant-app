@@ -1,20 +1,31 @@
 import React, { useState } from 'react';
 import { 
   X, Building2, User, Clock, CheckCircle2, DollarSign, Calendar, 
-  FileText, ShieldAlert, ArrowRight, Plus, AlertTriangle, ShieldCheck 
+  FileText, ShieldAlert, ArrowRight, Plus, AlertTriangle, ShieldCheck,
+  Link2, Copy, Check, UploadCloud, Eye
 } from 'lucide-react';
 import { crmService, CASE_STATUS_CONFIG } from '../services/crmService';
 import { taskService } from '../services/taskService';
 import { auditService } from '../services/auditService';
 import { authService, STAFF_USERS } from '../services/authService';
+import { documentService } from '../services/documentService';
+import DocumentReviewModal from './DocumentReviewModal';
 
 export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }) {
   const [currentCase, setCurrentCase] = useState(initialCase);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'finance', 'tasks', 'audit'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'documents', 'finance', 'tasks', 'audit'
   const [caseTasks, setCaseTasks] = useState(() => {
     return taskService.getTasks().filter(t => t.caseId === initialCase.id);
   });
   const [auditLogs, setAuditLogs] = useState([]);
+
+  // Documents state
+  const [caseReqs, setCaseReqs] = useState(() => {
+    return documentService.getCaseRequirements(initialCase.id);
+  });
+  const [reviewingDoc, setReviewingDoc] = useState(null);
+  const [generatedLink, setGeneratedLink] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // New task form state
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -103,6 +114,26 @@ export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }
     }
   };
 
+  const completeness = documentService.calculateCompleteness(currentCase.id);
+
+  const handleGenerateLink = () => {
+    const tokenObj = documentService.generateUploadToken(currentCase.id, currentCase.tradingName);
+    setGeneratedLink(tokenObj);
+    setCopiedLink(false);
+  };
+
+  const handleCopy = () => {
+    if (generatedLink?.uploadUrl) {
+      navigator.clipboard.writeText(generatedLink.uploadUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    }
+  };
+
+  const refreshCaseReqs = () => {
+    setCaseReqs(documentService.getCaseRequirements(currentCase.id));
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
@@ -134,18 +165,31 @@ export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-100 px-6 border-b border-slate-200 flex space-x-4 text-xs font-bold">
+        <div className="bg-slate-100 px-6 border-b border-slate-200 flex space-x-4 text-xs font-bold overflow-x-auto">
           <button
             onClick={() => handleTabChange('overview')}
-            className={`py-3 border-b-2 transition ${
+            className={`py-3 border-b-2 transition whitespace-nowrap ${
               activeTab === 'overview' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             Overview & Action Plan
           </button>
+
+          <button
+            onClick={() => handleTabChange('documents')}
+            className={`py-3 border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap ${
+              activeTab === 'documents' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Documents & Evidence ({completeness.percentage}%)</span>
+            {completeness.underReview > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+          </button>
+
           <button
             onClick={() => handleTabChange('finance')}
-            className={`py-3 border-b-2 transition flex items-center space-x-1.5 ${
+            className={`py-3 border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap ${
               activeTab === 'finance' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -156,17 +200,19 @@ export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             )}
           </button>
+
           <button
             onClick={() => handleTabChange('tasks')}
-            className={`py-3 border-b-2 transition ${
+            className={`py-3 border-b-2 transition whitespace-nowrap ${
               activeTab === 'tasks' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             Case Tasks ({caseTasks.length})
           </button>
+
           <button
             onClick={() => handleTabChange('audit')}
-            className={`py-3 border-b-2 transition ${
+            className={`py-3 border-b-2 transition whitespace-nowrap ${
               activeTab === 'audit' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -276,6 +322,136 @@ export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }
                   <span className="text-slate-400 font-bold uppercase text-[10px] block">Onboarding Date</span>
                   <strong className="text-slate-900">{currentCase.onboardingDate}</strong>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: DOCUMENTS & EVIDENCE */}
+          {activeTab === 'documents' && (
+            <div className="space-y-6">
+              {/* Completeness Summary Banner */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs uppercase font-extrabold text-amber-600 tracking-wider">
+                      Document Completeness Meter
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {completeness.verified} of {completeness.total} Verified
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-48 bg-slate-200 h-3 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${completeness.percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-base font-black text-slate-900">{completeness.percentage}%</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleGenerateLink}
+                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-sm"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Generate Client Upload Link</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Generated Link Alert */}
+              {generatedLink && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <strong className="text-amber-900 font-bold">Secure Upload Link Generated (Valid 72h):</strong>
+                    <span className="text-[10px] font-mono bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                      Single-client scoped
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generatedLink.uploadUrl}
+                      className="flex-1 bg-white border border-slate-300 rounded p-1.5 text-xs font-mono"
+                    />
+                    <button
+                      onClick={handleCopy}
+                      className="px-3 py-1.5 bg-slate-900 text-white rounded font-bold hover:bg-slate-800 flex items-center space-x-1"
+                    >
+                      {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Requirements Checklist Table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4 font-bold">Required Document</th>
+                      <th className="py-3 px-4 font-bold">Category</th>
+                      <th className="py-3 px-4 font-bold text-center">Status</th>
+                      <th className="py-3 px-4 font-bold">Uploaded File</th>
+                      <th className="py-3 px-4 font-bold text-right">Verification Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {caseReqs.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="py-8 text-center text-slate-400">
+                          No document checklist generated yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      caseReqs.map(req => (
+                        <tr key={req.id} className="hover:bg-slate-50/80 transition">
+                          <td className="py-3 px-4">
+                            <strong className="text-slate-900 block font-bold">{req.documentName}</strong>
+                            {req.rejectionReason && (
+                              <span className="text-rose-600 text-[10px] font-semibold block mt-0.5">
+                                Reason: {req.rejectionReason}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-slate-500">
+                            {req.category}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              req.status === 'verified' ? 'bg-emerald-100 text-emerald-800' :
+                              req.status === 'under_review' ? 'bg-amber-100 text-amber-800' :
+                              req.status === 'correction_required' ? 'bg-rose-100 text-rose-800' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {req.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-700 font-mono text-[11px]">
+                            {req.uploadedFile ? req.uploadedFile.fileName : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {req.uploadedFile ? (
+                              <button
+                                onClick={() => setReviewingDoc(req)}
+                                className="px-3 py-1 bg-slate-900 text-white rounded font-bold hover:bg-slate-800"
+                              >
+                                Review
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">Awaiting Upload</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -496,6 +672,15 @@ export default function CaseDossierModal({ initialCase, onClose, onCaseUpdated }
           )}
         </div>
       </div>
+
+      {reviewingDoc && (
+        <DocumentReviewModal
+          requirement={reviewingDoc}
+          onClose={() => setReviewingDoc(null)}
+          onReviewed={refreshCaseReqs}
+        />
+      )}
     </div>
   );
 }
+

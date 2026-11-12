@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0-phase2] - 2026-11-12
+
+### Added
+- **Intelligent Document Hub Service (`src/services/documentService.js`)**: Dynamic document requirement templates based on applicant type (SME, Startup, NGO, Cooperative, Individual), case requirement generation, and real-time completeness percentage calculators.
+- **Cryptographic One-Time Upload Link System**: Time-limited (72h) random token generator (`/upload?token=...`), SHA-256 token hashing, token revocation, and rate-limited token validation.
+- **Client-Facing Secure Upload Portal (`src/components/ClientUploadPortal.jsx`)**: Password-less, mobile-optimized upload portal for clients with drag-and-drop file uploader, file format validation, and client remark attachments.
+- **Staff Document Verification Desk (`src/components/DocumentReviewModal.jsx`, `src/components/DocumentHubView.jsx`)**: Comprehensive inspection desk enabling officers to verify compliant documents or issue detailed correction notices (triggering client follow-up).
+- **Dossier Embedded Checklist (`src/components/CaseDossierModal.jsx`)**: Dynamic checklist tab inside every client case dossier, live completeness progress bar, and 1-click client link generator.
+- **Evidence-Based Readiness Assessment Engine (`src/services/readinessService.js`, `src/components/ReadinessCalculator.jsx`)**:
+  - Enforced assessor staff attribution (assessor ID, role, assessment date).
+  - Implemented Not-Applicable (N/A) policy with documented justifications.
+  - Linked criteria evaluations directly to supporting document references.
+  - Full historical assessment snapshots.
+- **Official A4 Diagnostic Report Refactor (`src/components/PrintableReport.jsx`)**: Official letterhead diagnostic audit backed by live assessment records, prioritized gap roadmap, and electronic assessor sign-off block.
+
 ## [2.1.0-phase1] - 2026-11-12
 
 ### Added

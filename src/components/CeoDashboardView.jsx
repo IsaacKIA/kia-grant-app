@@ -253,3 +253,4 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient }) {
     </div>
   );
 }
+

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Printer, Download, Compass, ShieldCheck, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
-import { PILLARS, READINESS_TIERS, calculateReadiness } from '../data/criteria';
+import { Printer, Compass, ArrowLeft, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { PILLARS } from '../data/criteria';
+import { readinessService } from '../services/readinessService';
+import { authService } from '../services/authService';
 
 export default function PrintableReport({ clients, selectedClient, onBack }) {
   const [activeClientId, setActiveClientId] = useState(selectedClient?.id || clients[0]?.id || '');
   const client = clients.find(c => c.id === activeClientId) || clients[0];
-  const readiness = calculateReadiness(client?.scores || {});
+  
+  // Calculate readiness via service
+  const readiness = readinessService.calculateScore(client?.scores || {});
+  const currentUser = authService.getCurrentUser();
 
   const handlePrint = () => {
     window.print();
@@ -45,7 +50,7 @@ export default function PrintableReport({ clients, selectedClient, onBack }) {
           onClick={handlePrint}
           className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm"
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-4 h-4 text-amber-400" />
           <span>Print / Save as PDF</span>
         </button>
       </div>
@@ -70,10 +75,10 @@ export default function PrintableReport({ clients, selectedClient, onBack }) {
 
           <div className="text-right">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-600 block">
-              Official Diagnostic Report
+              Official Diagnostic Audit
             </span>
             <span className="text-xs text-slate-500">
-              Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              Audit Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           </div>
         </div>
@@ -93,113 +98,143 @@ export default function PrintableReport({ clients, selectedClient, onBack }) {
             <strong className="text-slate-900 text-sm">{client?.sector}</strong>
           </div>
           <div>
-            <span className="text-slate-500 font-semibold block">Consultant</span>
-            <strong className="text-slate-900 text-sm">{client?.assignedConsultant}</strong>
+            <span className="text-slate-500 font-semibold block">Evaluating Assessor</span>
+            <strong className="text-slate-900 text-sm">{currentUser.fullName}</strong>
           </div>
         </div>
 
-        {/* Executive Score Card */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-              Grant Readiness Scorecard
+        {/* Overall Score Banner */}
+        <div className="bg-slate-900 text-white p-6 rounded-2xl mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-amber-400">
+              Grant Readiness Index (0–100 Scale)
             </span>
-            <h2 className="text-2xl font-black mt-1">
-              {readiness.tier.label}
-            </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-md leading-relaxed">
+            <div className="flex items-center space-x-3">
+              <span className="text-4xl font-black text-white">{readiness.totalScore}</span>
+              <span className="text-slate-400 text-sm font-semibold">/ 100 Points</span>
+              <span className={`text-xs px-3 py-1 rounded-full font-bold border ${readiness.tier.badgeClass}`}>
+                {readiness.tier.label}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-lg">
               {readiness.tier.recommendation}
             </p>
           </div>
 
-          <div className="flex-shrink-0 text-center bg-white/10 px-6 py-4 rounded-xl border border-white/20">
-            <div className="text-4xl font-black text-amber-400">{readiness.totalScore}</div>
-            <div className="text-[10px] text-slate-300 uppercase font-semibold">out of 100 points</div>
+          <div className="text-right sm:border-l border-slate-800 sm:pl-6 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block">Assessment Pillar Score</span>
+            <span className="text-2xl font-bold text-amber-400">10 Pillars</span>
+            <span className="text-[10px] text-slate-400 block">20 Evaluated Criteria</span>
           </div>
         </div>
 
-        {/* 10-Pillar Breakdown Table */}
-        <div className="space-y-3 mb-8">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Pillar-by-Pillar Evaluation (20 Sub-Criteria)
-          </h3>
-          <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-            <thead className="bg-slate-100 text-slate-600 uppercase font-bold border-b border-slate-200">
-              <tr>
-                <th className="px-3 py-2.5">Pillar</th>
-                <th className="px-3 py-2.5 text-center">Score</th>
-                <th className="px-3 py-2.5 text-center">Max</th>
-                <th className="px-3 py-2.5 text-center">Achievement</th>
-                <th className="px-3 py-2.5 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {PILLARS.map(p => {
-                const pillarScore = p.subCriteria.reduce((s, sub) => s + (client?.scores?.[sub.id] || 0), 0);
-                const pct = Math.round((pillarScore / p.maxPoints) * 100);
-                return (
-                  <tr key={p.id}>
-                    <td className="px-3 py-2 font-medium text-slate-800">{p.name}</td>
-                    <td className="px-3 py-2 text-center font-bold">{pillarScore}</td>
-                    <td className="px-3 py-2 text-center text-slate-500">{p.maxPoints}</td>
-                    <td className="px-3 py-2 text-center font-semibold">{pct}%</td>
-                    <td className="px-3 py-2 text-right">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        pct >= 80 ? 'bg-emerald-100 text-emerald-800' : pct >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+        {/* 10 Pillars Score Summary Table */}
+        <div className="mb-8">
+          <h2 className="text-sm font-bold uppercase text-slate-900 tracking-wider mb-3">
+            1. Diagnostic Pillar Performance Breakdown
+          </h2>
+          <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-4 font-bold">Assessment Area</th>
+                  <th className="py-2.5 px-4 font-bold text-center">Score</th>
+                  <th className="py-2.5 px-4 font-bold text-center">Max Pts</th>
+                  <th className="py-2.5 px-4 font-bold">Status Assessment</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {PILLARS.map(p => {
+                  let pScore = 0;
+                  p.subCriteria.forEach(sub => {
+                    pScore += (client?.scores?.[sub.id] || 0);
+                  });
+                  const ratio = pScore / p.maxPoints;
+
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50/50">
+                      <td className="py-2.5 px-4 font-bold text-slate-800">{p.name}</td>
+                      <td className="py-2.5 px-4 text-center font-bold text-slate-900">{pScore}</td>
+                      <td className="py-2.5 px-4 text-center text-slate-400">{p.maxPoints}</td>
+                      <td className="py-2.5 px-4">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                          ratio >= 0.8 ? 'bg-emerald-50 text-emerald-700' :
+                          ratio >= 0.6 ? 'bg-amber-50 text-amber-700' :
+                          'bg-rose-50 text-rose-700'
+                        }`}>
+                          {ratio >= 0.8 ? 'High Strength' : ratio >= 0.6 ? 'Moderate' : 'Evidence Gap'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Gap Analysis & Action Roadmap */}
+        <div className="mb-8 page-break-inside-avoid">
+          <h2 className="text-sm font-bold uppercase text-slate-900 tracking-wider mb-3">
+            2. Prioritized Action Roadmap & Remediation Steps
+          </h2>
+          {readiness.gaps.length === 0 ? (
+            <p className="text-xs text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              No critical evidence gaps detected. Client meets or exceeds institutional donor readiness thresholds across all metrics.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {readiness.gaps.map((gap, idx) => (
+                <div 
+                  key={idx}
+                  className={`p-3.5 rounded-xl border text-xs flex items-start justify-between gap-4 ${
+                    gap.severity === 'high' 
+                      ? 'bg-rose-50/50 border-rose-200 text-rose-900' 
+                      : 'bg-amber-50/50 border-amber-200 text-amber-900'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <strong className="font-bold">{gap.pillar}</strong>
+                      <span className="text-[10px] font-semibold text-slate-500">• {gap.criterionTitle}</span>
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                        gap.severity === 'high' ? 'bg-rose-200 text-rose-800' : 'bg-amber-200 text-amber-800'
                       }`}>
-                        {pct >= 80 ? 'Verified' : pct >= 60 ? 'Moderate' : 'Needs Fix'}
+                        Score: {gap.score}/5
                       </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Action Roadmap */}
-        <div className="space-y-3 mb-8">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            High-Priority Remediation Roadmap
-          </h3>
-          <div className="space-y-2 text-xs">
-            {readiness.gaps.slice(0, 5).map((gap, i) => (
-              <div key={i} className="flex items-start space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center flex-shrink-0 text-[10px]">
-                  {i + 1}
-                </span>
-                <div>
-                  <strong className="text-slate-900">{gap.criterion}:</strong>{' '}
-                  <span className="text-slate-600">{gap.fixAction}</span>
+                    </div>
+                    <p className="text-slate-700 font-medium">
+                      <strong>Remediation:</strong> {gap.fixAction}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Priority Grants Identified */}
-        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 mb-8 text-xs">
-          <h4 className="font-bold text-slate-800 mb-2 uppercase tracking-wider text-[11px]">
-            Target Grant Windows Identified:
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {(client?.priorityGrants || []).map((grant, i) => (
-              <span key={i} className="px-3 py-1 rounded-md bg-white border border-slate-300 font-bold text-slate-800">
-                🎯 {grant}
-              </span>
-            ))}
+        {/* Official Assessor Sign-Off Block */}
+        <div className="pt-6 border-t-2 border-slate-200 grid grid-cols-2 gap-8 text-xs text-slate-600 page-break-inside-avoid">
+          <div className="space-y-4">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Lead Grant Advisor</span>
+              <strong className="text-slate-900 text-sm block">{currentUser.fullName}</strong>
+              <span className="text-slate-500">{currentUser.roleLabel} • KIA-START UP CONSULT</span>
+            </div>
+            <div className="h-12 border-b border-dashed border-slate-300 flex items-end pb-1">
+              <span className="text-[10px] text-slate-400 italic">Signature: Verified electronically under Act 843</span>
+            </div>
           </div>
-        </div>
 
-        {/* Signoff */}
-        <div className="pt-8 border-t border-slate-200 flex justify-between items-end text-xs">
-          <div>
-            <p className="font-bold text-slate-900">Lead Consultant</p>
-            <p className="text-slate-500">Kia-Start Up Consult</p>
-          </div>
-          <div className="text-right">
-            <div className="w-36 border-b border-slate-400 mb-1"></div>
-            <p className="text-slate-500 text-[10px]">Authorized Signature & Stamp</p>
+          <div className="space-y-4 text-right">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Advisory Practice Validation</span>
+              <strong className="text-slate-900 text-sm block">Accra Advisory Center</strong>
+              <span className="text-slate-500">Official Stamp: KIA-START UP CONSULT</span>
+            </div>
+            <div className="h-12 border-b border-dashed border-slate-300 flex items-end justify-end pb-1">
+              <span className="text-[10px] text-slate-400 italic">Report Reference: KIA-DIAG-{client?.id}</span>
+            </div>
           </div>
         </div>
       </div>

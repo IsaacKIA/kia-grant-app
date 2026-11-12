@@ -332,3 +332,4 @@ CREATE TABLE IF NOT EXISTS legacy_migration_staging (
     reconciled_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
