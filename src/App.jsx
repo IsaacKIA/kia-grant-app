@@ -5,7 +5,6 @@ import CeoDashboardView from './components/CeoDashboardView';
 import CrmCasesView from './components/CrmCasesView';
 import TasksView from './components/TasksView';
 import LegacyRecoveryView from './components/LegacyRecoveryView';
-import PipelineView from './components/PipelineView';
 import ReadinessCalculator from './components/ReadinessCalculator';
 import GrantMatcher from './components/GrantMatcher';
 import PrintableReport from './components/PrintableReport';
@@ -13,6 +12,8 @@ import DocumentHubView from './components/DocumentHubView';
 import ClientUploadPortal from './components/ClientUploadPortal';
 import CaseDossierModal from './components/CaseDossierModal';
 import NewClientIntakeModal from './components/NewClientIntakeModal';
+import ApplicationPipelineView from './components/ApplicationPipelineView';
+import GrantCatalogueView from './components/GrantCatalogueView';
 
 import { authService } from './services/authService';
 import { crmService } from './services/crmService';
@@ -176,68 +177,45 @@ export default function App() {
               <TasksView />
             )}
 
-            {/* TAB 5: Pipeline View */}
+            {/* TAB 5: Applications Pipeline */}
             {activeTab === 'pipeline' && (
-          <PipelineView
-            clients={legacyClients}
-            onSelectClient={(c) => {
-              // Map to case dossier if match exists
-              const matchedCase = cases.find(cs => cs.tradingName.toLowerCase().includes(c.businessName.toLowerCase()));
-              if (matchedCase) {
-                setSelectedCaseForDossier(matchedCase);
-              } else {
-                setSelectedCaseForDossier({
-                  id: c.id,
-                  caseNumber: `LEGACY-${c.id}`,
-                  legalName: c.businessName,
-                  tradingName: c.businessName,
-                  applicantType: 'SME',
-                  sector: c.sector,
-                  businessStage: 'Operational',
-                  region: 'Greater Accra',
-                  primaryContact: { fullName: c.clientName, phone: '+233 24 000 0000', email: '' },
-                  currentOfficerId: 'staff-03',
-                  status: 'documentation',
-                  onboardingDate: c.dateOnboarded,
-                  lastActivityAt: new Date().toISOString(),
-                  nextActionDescription: 'Reconcile legacy records and issue checklist.',
-                  nextActionDueDate: new Date().toISOString().split('T')[0],
-                  engagementFee: { amountDue: 200, amountPaid: c.commitmentFeePaid ? 200 : 0, isVerified: false, invoiceNumber: 'LEGACY-INV' }
-                });
-              }
-            }}
-            onOpenCalculator={handleOpenCalculatorForClient}
-            onOpenNewClient={() => setIsNewClientOpen(true)}
-            onUpdateClientStage={handleUpdateStage}
-          />
-        )}
+              <ApplicationPipelineView
+                onOpenMatcher={() => setActiveTab('matcher')}
+              />
+            )}
 
-        {/* TAB 5: Readiness Calculator */}
-        {activeTab === 'calculator' && (
-          <ReadinessCalculator
-            clients={legacyClients}
-            selectedClient={selectedClientForCalc}
-            onSaveScores={handleSaveScores}
-            onExportReport={handleExportReportForClient}
-          />
-        )}
+            {/* TAB 6: Grant Catalogue */}
+            {activeTab === 'grants' && (
+              <GrantCatalogueView
+                onAdoptOpportunity={() => setActiveTab('matcher')}
+              />
+            )}
 
-        {/* TAB 6: Grant Matcher */}
-        {activeTab === 'matcher' && (
-          <GrantMatcher
-            clients={legacyClients}
-            onUpdatePriorityGrants={handleUpdatePriorityGrants}
-          />
-        )}
+            {/* TAB 7: Grant Matcher */}
+            {activeTab === 'matcher' && (
+              <GrantMatcher
+                onApplicationAdopted={() => setActiveTab('pipeline')}
+              />
+            )}
 
-        {/* TAB 7: Diagnostic Reports */}
-        {activeTab === 'reports' && (
-          <PrintableReport
-            clients={legacyClients}
-            selectedClient={selectedClientForCalc}
-            onBack={() => setActiveTab('ceo_dashboard')}
-          />
-        )}
+            {/* TAB 8: Readiness Calculator */}
+            {activeTab === 'calculator' && (
+              <ReadinessCalculator
+                clients={legacyClients}
+                selectedClient={selectedClientForCalc}
+                onSaveScores={handleSaveScores}
+                onExportReport={handleExportReportForClient}
+              />
+            )}
+
+            {/* TAB 9: Diagnostic Reports */}
+            {activeTab === 'reports' && (
+              <PrintableReport
+                clients={legacyClients}
+                selectedClient={selectedClientForCalc}
+                onBack={() => setActiveTab('ceo_dashboard')}
+              />
+            )}
 
         {/* TAB 8: Legacy Client Recovery */}
         {activeTab === 'legacy_recovery' && (

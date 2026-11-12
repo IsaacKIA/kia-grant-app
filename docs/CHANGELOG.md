@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0-phase3] - 2026-11-12
+
+### Added
+- **Verified Grant Opportunity Catalogue (`src/services/grantService.js`, `src/components/GrantCatalogueView.jsx`)**:
+  - Centralized database of donor grant programs with mandatory verification workflows (`verified_open`, `upcoming`, `pending_verification`, `closed`).
+  - Pre-vetted high-profile funding opportunities (Mastercard Foundation Africa, USAID Feed the Future, GIZ Agribusiness, Tony Elumelu Foundation, AfDB AFAWA, GEPA Export Support).
+  - Mandatory official source URL and verification audit tracking before opportunities can be matched.
+  - Granular eligibility criteria matrices (sectors, applicant entity types, regional geographic restrictions, turnover brackets, readiness thresholds).
+- **Explainable Rule-Based Matching Engine (`src/services/matchingService.js`, `src/components/GrantMatcher.jsx`)**:
+  - Deterministic qualification evaluation (Highly Qualified, Qualified, Information Required, Disqualified) replacing arbitrary score guessing.
+  - Transparent rule-by-rule breakdowns identifying specific criteria passed, documentation gaps, and hard disqualifiers (e.g. USAID Northern Ghana geographic mandate).
+  - Direct 1-click adoption of matched grants into active client preparation cases.
+- **Enterprise Grant Application Pipeline (`src/services/applicationService.js`, `src/components/ApplicationPipelineView.jsx`)**:
+  - 8-stage operational acquisition workflow: `opportunity_selected` → `eligibility_confirmed` → `proposal_drafting` → `budget_prep` → `internal_qa` → `submitted` → `under_funder_review` → `awarded`/`unsuccessful`.
+  - Dual view modes: Interactive drag-and-drop styled Kanban Board and structured Data Table.
+  - Search and officer assignment filters with live stage counts.
+- **Internal Quality Assurance (QA) Gate Desk (`src/components/QaReviewModal.jsx`)**:
+  - Strict supervisory sign-off mechanism reserved for Team Leader (Abena Osei) and CEO (Kwame Boateng).
+  - 5-point formal quality checklist: RFP compliance, budget-narrative consistency, verified supporting documents, formatting & presentation, and risk review.
+  - Revision request workflow with mandatory actionable corrective feedback sent to the drafting officer.
+- **Verifiable Submission Record Desk (`src/components/SubmissionRecordModal.jsx`)**:
+  - Proof-of-submission requirement: officer must supply official funder submission confirmation code, submission timestamp, portal URL, and proof document before an application can be transitioned to "Submitted".
+  - Strictly prevents "lost" or unverified application submissions.
+- **Contractual Success Fee Trigger Desk**:
+  - When an application achieves "Awarded" status, an official 5% contractual success fee invoice is automatically created in the finance ledger with celebratory confetti feedback.
+
 ## [2.2.0-phase2] - 2026-11-12
 
 ### Added

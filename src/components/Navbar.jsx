@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Activity, Users, CheckSquare, TrendingUp, Calculator, 
-  Target, FileText, Database, UserPlus, ShieldAlert, Clock 
+  Target, FileText, Database, UserPlus, ShieldAlert, Clock, Award 
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -125,7 +125,7 @@ export default function Navbar({
             )}
           </button>
 
-          {/* Pipeline */}
+          {/* Applications Pipeline */}
           <button
             onClick={() => setActiveTab('pipeline')}
             className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
@@ -135,20 +135,20 @@ export default function Navbar({
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>7-Stage Pipeline</span>
+            <span>Applications Pipeline</span>
           </button>
 
-          {/* Readiness Calculator */}
+          {/* Grant Catalogue */}
           <button
-            onClick={() => setActiveTab('calculator')}
+            onClick={() => setActiveTab('grants')}
             className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'calculator'
+              activeTab === 'grants'
                 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Readiness Diagnostic</span>
+            <Award className="w-3.5 h-3.5" />
+            <span>Grant Catalogue</span>
           </button>
 
           {/* Grant Matcher */}
@@ -162,6 +162,19 @@ export default function Navbar({
           >
             <Target className="w-3.5 h-3.5" />
             <span>Grant Matcher</span>
+          </button>
+
+          {/* Readiness Diagnostic */}
+          <button
+            onClick={() => setActiveTab('calculator')}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'calculator'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Readiness Diagnostic</span>
           </button>
 
           {/* Diagnostic Reports */}

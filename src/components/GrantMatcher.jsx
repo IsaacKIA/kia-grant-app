@@ -1,184 +1,211 @@
 import React, { useState } from 'react';
-import { Target, CheckCircle2, AlertCircle, Sparkles, Filter, ExternalLink, BookmarkPlus, ArrowRight } from 'lucide-react';
-import { GRANTS_CATALOG } from '../data/grantsData';
-import { calculateReadiness } from '../data/criteria';
+import { 
+  Target, CheckCircle2, AlertTriangle, AlertCircle, 
+  ExternalLink, ArrowRight, ShieldCheck, DollarSign, Clock, Sparkles 
+} from 'lucide-react';
+import { matchingService } from '../services/matchingService';
+import { crmService } from '../services/crmService';
+import { applicationService } from '../services/applicationService';
 
-export default function GrantMatcher({ clients, onUpdatePriorityGrants }) {
-  const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
-  const [sectorFilter, setSectorFilter] = useState('All');
+export default function GrantMatcher({ onApplicationAdopted }) {
+  const [cases] = useState(() => crmService.getCases());
+  const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.id || '');
+  const [filterClassification, setFilterClassification] = useState('All');
+  const [adoptingGrantId, setAdoptingGrantId] = useState(null);
 
-  const selectedClient = clients.find(c => c.id === selectedClientId) || clients[0];
-  const readiness = calculateReadiness(selectedClient?.scores || {});
+  const selectedCase = cases.find(c => c.id === selectedCaseId) || cases[0];
+  const matches = selectedCase ? matchingService.matchAllGrantsForCase(selectedCase) : [];
 
-  const sectors = ['All', 'Agribusiness', 'Technology & Services', 'Beauty & Personal Care', 'NGO / Social Enterprise'];
-
-  const filteredGrants = GRANTS_CATALOG.filter(grant => {
-    if (sectorFilter === 'All') return true;
-    return grant.targetSectors.includes(sectorFilter);
+  const filteredMatches = matches.filter(m => {
+    if (filterClassification === 'All') return true;
+    if (filterClassification === 'Eligible') return m.classification.includes('Eligible');
+    if (filterClassification === 'InfoRequired') return m.classification.includes('Information Required');
+    if (filterClassification === 'Disqualified') return m.classification.includes('Disqualified');
+    return true;
   });
 
-  const togglePriorityGrant = (grantName) => {
-    if (!selectedClient) return;
-    const current = selectedClient.priorityGrants || [];
-    let updated;
-    if (current.includes(grantName)) {
-      updated = current.filter(g => g !== grantName);
-    } else {
-      updated = [...current, grantName];
+  const handleAdopt = async (match) => {
+    try {
+      const newApp = await applicationService.adoptOpportunity({
+        caseId: selectedCase.id,
+        clientName: selectedCase.tradingName,
+        opportunityId: match.grant.id,
+        targetFundingAmount: match.grant.minFundingAmount
+      });
+      alert(`Success! Created application ${newApp.applicationNumber} targeting ${match.grant.title}.`);
+      if (onApplicationAdopted) onApplicationAdopted(newApp);
+    } catch (err) {
+      alert(err.message);
     }
-    onUpdatePriorityGrants(selectedClient.id, updated);
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
+      {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs uppercase font-extrabold tracking-wider text-amber-600">
-            Intelligent Grant Matchmaking
+          <span className="text-xs uppercase font-extrabold tracking-wider text-amber-600 flex items-center space-x-1.5">
+            <Sparkles className="w-4 h-4" />
+            <span>Explainable Rule-Based Grant Matching Engine</span>
           </span>
-          <h2 className="text-xl font-bold text-slate-900">
-            Match Grants for {selectedClient?.businessName}
+          <h2 className="text-xl font-bold text-slate-900 mt-1">
+            Evaluate Eligibility for {selectedCase?.tradingName}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Matching algorithms cross-reference sector eligibility and readiness thresholds ({readiness.totalScore}/100).
+            Cross-references verified sector, applicant entity structure, operational region, and readiness thresholds against funder rules.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
-              Select Client:
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+              Select Client Case:
             </label>
             <select
-              value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
+              value={selectedCaseId}
+              onChange={(e) => setSelectedCaseId(e.target.value)}
               className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
-              {clients.map(c => (
+              {cases.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.businessName} ({c.sector})
+                  {c.tradingName} ({c.sector} • {c.applicantType})
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
-              Filter Sector:
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+              Filter Fit:
             </label>
             <select
-              value={sectorFilter}
-              onChange={(e) => setSectorFilter(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
+              value={filterClassification}
+              onChange={(e) => setFilterClassification(e.target.value)}
+              className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white font-medium"
             >
-              {sectors.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              <option value="All">All Classifications</option>
+              <option value="Eligible">Eligible Only</option>
+              <option value="InfoRequired">Information Required</option>
+              <option value="Disqualified">Disqualified</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Grant Cards Grid */}
+      {/* Match Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredGrants.map(grant => {
-          const isSectorMatch = grant.targetSectors.includes(selectedClient?.sector);
-          const isScoreEligible = readiness.totalScore >= grant.minReadinessScore;
-          const isSelected = (selectedClient?.priorityGrants || []).includes(grant.name);
-
-          let fitStatus = {
-            label: 'High Fit — Grant-Ready',
-            class: 'bg-emerald-50 text-emerald-700 border-emerald-300',
-            eligible: true
-          };
-
-          if (!isSectorMatch) {
-            fitStatus = {
-              label: 'Sector Mismatch',
-              class: 'bg-slate-100 text-slate-500 border-slate-200',
-              eligible: false
-            };
-          } else if (!isScoreEligible) {
-            fitStatus = {
-              label: `Score Gap (Requires ${grant.minReadinessScore} pts, Client has ${readiness.totalScore})`,
-              class: 'bg-amber-50 text-amber-700 border-amber-300',
-              eligible: false
-            };
-          }
+        {filteredMatches.map(match => {
+          const grant = match.grant;
 
           return (
-            <div
+            <div 
               key={grant.id}
-              className={`bg-white rounded-2xl border p-6 shadow-sm transition hover:shadow-md flex flex-col justify-between ${
-                isSelected ? 'ring-2 ring-amber-500 border-amber-500' : 'border-slate-200'
-              }`}
+              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition"
             >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="space-y-3">
+                {/* Header & Status */}
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">
-                      {grant.donor}
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      {grant.fundingOrganization}
                     </span>
-                    <h3 className="text-base font-extrabold text-slate-900 leading-snug">
-                      {grant.name}
+                    <h3 className="text-base font-bold text-slate-900 leading-snug">
+                      {grant.title}
                     </h3>
                   </div>
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold border flex-shrink-0 ${fitStatus.class}`}>
-                    {fitStatus.label}
+
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${match.badgeClass}`}>
+                    {match.classification}
                   </span>
                 </div>
 
-                {/* Amount & Type Pills */}
-                <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
-                  <span className="px-2.5 py-1 rounded-md bg-slate-100 font-bold text-slate-800">
-                    💰 {grant.amountRange}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-slate-100 font-semibold text-slate-600">
-                    ⏱ Deadline: {grant.deadline}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-slate-100 font-semibold text-slate-600">
-                    📁 {grant.fundingType}
-                  </span>
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Funding Window</span>
+                    <strong className="text-slate-900">GH₵ {grant.minFundingAmount.toLocaleString()} – {grant.maxFundingAmount.toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Deadline</span>
+                    <strong className="text-slate-900">{grant.closingDate || 'Rolling'}</strong>
+                  </div>
                 </div>
 
-                <p className="text-xs text-slate-600 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <strong className="text-slate-800">Donor Priority:</strong> {grant.donorFocus}
-                </p>
+                {/* Explainable Evaluation Rules */}
+                <div className="space-y-2 text-xs pt-1">
+                  {/* Satisfied Criteria */}
+                  {match.satisfiedCriteria.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase text-emerald-700 tracking-wider">
+                        Criteria Satisfied ({match.satisfiedCriteria.length})
+                      </span>
+                      {match.satisfiedCriteria.map((c, i) => (
+                        <div key={i} className="flex items-start space-x-1.5 text-[11px] text-emerald-800">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                {/* Eligibility Criteria */}
-                <div className="space-y-1.5 mb-4">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                    Core Eligibility Requirements:
-                  </span>
-                  <ul className="space-y-1 text-xs text-slate-600">
-                    {grant.eligibility.map((req, i) => (
-                      <li key={i} className="flex items-start space-x-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span>{req}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Missing Info */}
+                  {match.missingInformation.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-bold uppercase text-amber-700 tracking-wider">
+                        Required Actions & Evidence Gaps ({match.missingInformation.length})
+                      </span>
+                      {match.missingInformation.map((m, i) => (
+                        <div key={i} className="flex items-start space-x-1.5 text-[11px] text-amber-800">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span>{m}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Disqualifying Reasons */}
+                  {match.disqualifyingReasons.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-bold uppercase text-rose-700 tracking-wider">
+                        Disqualifying Conditions ({match.disqualifyingReasons.length})
+                      </span>
+                      {match.disqualifyingReasons.map((d, i) => (
+                        <div key={i} className="flex items-start space-x-1.5 text-[11px] text-rose-800">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                          <span>{d}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recommended Next Action */}
+                <div className="bg-slate-100 p-2.5 rounded-lg text-[11px] text-slate-700">
+                  <strong>Recommended Action:</strong> {match.recommendedAction}
                 </div>
               </div>
 
-              {/* Action Footer */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500">
-                  Min. Score: <strong className="text-slate-800">{grant.minReadinessScore} / 100</strong>
-                </span>
-
-                <button
-                  onClick={() => togglePriorityGrant(grant.name)}
-                  className={`text-xs font-bold px-3.5 py-2 rounded-lg flex items-center space-x-1.5 transition ${
-                    isSelected
-                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                      : 'bg-slate-900 text-white hover:bg-slate-800'
-                  }`}
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <a
+                  href={grant.officialSourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center space-x-1 font-bold text-amber-600 hover:text-amber-700"
                 >
-                  <BookmarkPlus className="w-3.5 h-3.5" />
-                  <span>{isSelected ? '✓ In Client Priority List' : '+ Add to Priority Grants'}</span>
-                </button>
+                  <span>Official Funder Portal</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+
+                {match.isAdoptable && (
+                  <button
+                    onClick={() => handleAdopt(match)}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition flex items-center space-x-1 shadow-sm"
+                  >
+                    <span>Adopt for Application Prep</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           );
