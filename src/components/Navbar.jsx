@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Activity, Users, CheckSquare, TrendingUp, Calculator, 
-  Target, FileText, Database, UserPlus, Clock, Award, DollarSign, Zap 
+  Target, FileText, Database, UserPlus, Clock, Award, DollarSign, Zap, Search 
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -11,7 +11,8 @@ export default function Navbar({
   verifiedFees, 
   overdueTasksCount, 
   underReviewDocsCount = 0,
-  onOpenNewClient 
+  onOpenNewClient,
+  onOpenSearch
 }) {
   return (
     <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
@@ -53,6 +54,21 @@ export default function Navbar({
                 <Clock className="w-3.5 h-3.5 text-rose-400" />
                 <span className="font-bold text-xs">{overdueTasksCount} Overdue Tasks</span>
               </div>
+            )}
+
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="flex items-center space-x-2 bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 px-3 py-2 rounded-xl text-xs font-medium transition"
+                title="Search clients, grants, applications, and tasks (Ctrl+K)"
+              >
+                <Search className="w-3.5 h-3.5 text-amber-400" />
+                <span>Search</span>
+                <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-slate-900 text-slate-400 rounded border border-slate-700">
+                  Ctrl+K
+                </kbd>
+              </button>
             )}
 
             <button

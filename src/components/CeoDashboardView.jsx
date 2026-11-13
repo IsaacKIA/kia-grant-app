@@ -107,7 +107,10 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient, onOpe
       {/* Core Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Cases */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+        <div
+          onClick={() => onNavigateTab('crm_cases')}
+          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition cursor-pointer"
+        >
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Active Cases</span>
             <Users className="w-4 h-4 text-slate-400" />
@@ -123,7 +126,10 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient, onOpe
         </div>
 
         {/* Task Escalations */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+        <div
+          onClick={() => onNavigateTab('tasks')}
+          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition cursor-pointer"
+        >
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Overdue Tasks</span>
             <Clock className="w-4 h-4 text-amber-500" />

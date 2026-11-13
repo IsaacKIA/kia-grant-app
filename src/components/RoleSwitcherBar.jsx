@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Users, LogOut, ShieldCheck } from 'lucide-react';
+import { User, Users, LogOut, ShieldCheck, Lock } from 'lucide-react';
 
-export default function RoleSwitcherBar({ currentUser, onOpenTeamManagement, onSignOut }) {
+export default function RoleSwitcherBar({ currentUser, onOpenTeamManagement, onOpenChangePassword, onSignOut }) {
   if (!currentUser) return null;
 
   return (
@@ -34,6 +34,17 @@ export default function RoleSwitcherBar({ currentUser, onOpenTeamManagement, onS
           >
             <Users className="w-3.5 h-3.5" />
             <span>{currentUser.role === 'ceo' ? 'Add / Manage Team' : 'Team List'}</span>
+          </button>
+        )}
+
+        {onOpenChangePassword && (
+          <button
+            type="button"
+            onClick={onOpenChangePassword}
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white hover:border-slate-500 transition"
+          >
+            <Lock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Change Password</span>
           </button>
         )}
 

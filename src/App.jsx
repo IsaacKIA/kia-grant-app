@@ -18,6 +18,8 @@ import FinanceDeskView from './components/FinanceDeskView';
 import AutomationControlView from './components/AutomationControlView';
 import OperationalReportsView from './components/OperationalReportsView';
 import TeamManagementModal from './components/TeamManagementModal';
+import ChangePasswordModal from './components/ChangePasswordModal';
+import GlobalSearchModal from './components/GlobalSearchModal';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 
@@ -54,6 +56,20 @@ export default function App() {
   const [selectedCaseForDossier, setSelectedCaseForDossier] = useState(null);
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    if (authScreen !== 'app') return;
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [authScreen]);
   
   // Pipeline & legacy compatibility state
   const [legacyClients, setLegacyClients] = useState(() => {
@@ -170,6 +186,7 @@ export default function App() {
           <RoleSwitcherBar
             currentUser={currentUser}
             onOpenTeamManagement={() => setIsTeamModalOpen(true)}
+            onOpenChangePassword={() => setIsChangePasswordOpen(true)}
             onSignOut={handleSignOut}
           />
 
@@ -182,6 +199,7 @@ export default function App() {
             overdueTasksCount={ceoMetrics.overdueTasksCount}
             underReviewDocsCount={underReviewDocsCount}
             onOpenNewClient={() => setIsNewClientOpen(true)}
+            onOpenSearch={() => setIsSearchOpen(true)}
           />
 
           {/* Main Workspace View Container */}
@@ -303,6 +321,19 @@ export default function App() {
         onClose={() => setIsTeamModalOpen(false)}
         currentUser={currentUser}
         onTeamUpdated={(updated) => setStaffUsers(updated)}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        currentUser={currentUser}
+      />
+
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectCase={(c) => setSelectedCaseForDossier(c)}
+        onNavigateTab={(tab) => setActiveTab(tab)}
       />
         </>
       )}
