@@ -1,8 +1,8 @@
 import React from 'react';
-import { User, KeyRound, Users } from 'lucide-react';
+import { User, KeyRound, Users, LogOut } from 'lucide-react';
 import { STAFF_USERS } from '../services/authService';
 
-export default function RoleSwitcherBar({ currentUser, staffUsers, onSwitchUser, onOpenTeamManagement }) {
+export default function RoleSwitcherBar({ currentUser, staffUsers, onSwitchUser, onOpenTeamManagement, onSignOut }) {
   const usersList = staffUsers && staffUsers.length > 0 ? staffUsers : STAFF_USERS;
   const activeUsers = usersList.filter(u => u.isActive !== false);
 
@@ -55,6 +55,17 @@ export default function RoleSwitcherBar({ currentUser, staffUsers, onSwitchUser,
             ))}
           </select>
         </div>
+
+        {onSignOut && (
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white hover:border-slate-500 transition"
+          >
+            <LogOut className="w-3.5 h-3.5 text-slate-400" />
+            <span>Sign Out</span>
+          </button>
+        )}
       </div>
     </div>
   );

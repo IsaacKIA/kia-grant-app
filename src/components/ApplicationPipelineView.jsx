@@ -29,6 +29,15 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
     setApplications(applicationService.getApplications());
   };
 
+  const handleAdvanceStage = async (appId, nextStage) => {
+    try {
+      await applicationService.updateApplicationStage(appId, nextStage);
+      refreshApplications();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const officers = STAFF_USERS.filter(s => s.role === 'application_officer' || s.role === 'team_leader');
 
   const filteredApps = applications.filter(a => {
@@ -136,14 +145,14 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
 
       {/* Kanban View */}
       {viewMode === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">
-          {APPLICATION_STAGES.slice(0, 8).map(stage => {
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {APPLICATION_STAGES.map(stage => {
             const stageApps = filteredApps.filter(a => a.status === stage.id);
 
             return (
               <div 
                 key={stage.id}
-                className="bg-slate-100/70 rounded-2xl p-3.5 border border-slate-200 flex flex-col space-y-3 min-w-[280px]"
+                className="bg-slate-100/70 rounded-2xl p-3.5 border border-slate-200 flex flex-col space-y-3 w-[290px] shrink-0"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between px-1">
@@ -196,13 +205,43 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
                           </div>
 
                           {/* Specific Context Actions */}
+                          {app.status === 'opportunity_selected' && (
+                            <button
+                              onClick={() => handleAdvanceStage(app.id, 'proposal_preparation')}
+                              className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Start Proposal Draft</span>
+                            </button>
+                          )}
+
+                          {app.status === 'proposal_preparation' && (
+                            <button
+                              onClick={() => handleAdvanceStage(app.id, 'budget_preparation')}
+                              className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Move to Budget</span>
+                            </button>
+                          )}
+
+                          {app.status === 'budget_preparation' && (
+                            <button
+                              onClick={() => handleAdvanceStage(app.id, 'internal_review')}
+                              className="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>Send to QA Review</span>
+                            </button>
+                          )}
+
                           {app.status === 'internal_review' && (
                             <button
                               onClick={() => setQaApp(app)}
                               className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
                             >
                               <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>Conduct QA Gate Review</span>
+                              <span>Review & Approve (QA)</span>
                             </button>
                           )}
 
@@ -212,7 +251,7 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
                               className="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
                             >
                               <Send className="w-3.5 h-3.5" />
-                              <span>Record Funder Submission</span>
+                              <span>Record Submission</span>
                             </button>
                           )}
 
@@ -225,13 +264,19 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
                               className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1"
                             >
                               <Award className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Record Funder Decision</span>
+                              <span>Record Final Result</span>
                             </button>
                           )}
 
                           {app.status === 'awarded' && (
                             <div className="bg-emerald-50 border border-emerald-300 rounded p-1.5 text-center text-[10px] text-emerald-800 font-bold">
                               🏆 Awarded GH₵ {Number(app.awardedAmount).toLocaleString()}!
+                            </div>
+                          )}
+
+                          {app.status === 'rejected' && (
+                            <div className="bg-rose-50 border border-rose-200 rounded p-1.5 text-center text-[10px] text-rose-700 font-bold">
+                              Not Funded
                             </div>
                           )}
                         </div>
@@ -256,7 +301,7 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
                   <th className="py-3 px-4 font-bold">Officer</th>
                   <th className="py-3 px-4 font-bold">Stage</th>
                   <th className="py-3 px-4 font-bold">Funder Deadline</th>
-                  <th className="py-3 px-4 font-bold text-right">Action</th>
+                  <th className="py-3 px-4 font-bold text-right">Next Step</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -288,22 +333,62 @@ export default function ApplicationPipelineView({ onOpenMatcher }) {
                         {app.funderDeadline}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {app.status === 'internal_review' ? (
+                        {app.status === 'opportunity_selected' && (
+                          <button
+                            onClick={() => handleAdvanceStage(app.id, 'proposal_preparation')}
+                            className="px-2.5 py-1 bg-blue-600 text-white font-bold rounded hover:bg-blue-700"
+                          >
+                            Start Draft
+                          </button>
+                        )}
+                        {app.status === 'proposal_preparation' && (
+                          <button
+                            onClick={() => handleAdvanceStage(app.id, 'budget_preparation')}
+                            className="px-2.5 py-1 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700"
+                          >
+                            Move to Budget
+                          </button>
+                        )}
+                        {app.status === 'budget_preparation' && (
+                          <button
+                            onClick={() => handleAdvanceStage(app.id, 'internal_review')}
+                            className="px-2.5 py-1 bg-purple-600 text-white font-bold rounded hover:bg-purple-700"
+                          >
+                            Send to QA
+                          </button>
+                        )}
+                        {app.status === 'internal_review' && (
                           <button
                             onClick={() => setQaApp(app)}
-                            className="px-2.5 py-1 bg-amber-500 text-slate-950 font-bold rounded"
+                            className="px-2.5 py-1 bg-amber-500 text-slate-950 font-bold rounded hover:bg-amber-400"
                           >
                             QA Review
                           </button>
-                        ) : app.status === 'approved_for_submission' ? (
+                        )}
+                        {app.status === 'approved_for_submission' && (
                           <button
                             onClick={() => setSubmittingApp(app)}
-                            className="px-2.5 py-1 bg-teal-600 text-white font-bold rounded"
+                            className="px-2.5 py-1 bg-teal-600 text-white font-bold rounded hover:bg-teal-700"
                           >
-                            Submit
+                            Record Submission
                           </button>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">In Progress</span>
+                        )}
+                        {(app.status === 'submitted' || app.status === 'under_funder_review') && (
+                          <button
+                            onClick={() => {
+                              setOutcomeApp(app);
+                              setAwardedAmount(String(app.targetFundingAmount));
+                            }}
+                            className="px-2.5 py-1 bg-slate-900 text-white font-bold rounded hover:bg-slate-800"
+                          >
+                            Record Result
+                          </button>
+                        )}
+                        {app.status === 'awarded' && (
+                          <span className="text-emerald-700 font-bold text-[11px]">Awarded</span>
+                        )}
+                        {app.status === 'rejected' && (
+                          <span className="text-rose-600 font-bold text-[11px]">Not Funded</span>
                         )}
                       </td>
                     </tr>

@@ -18,6 +18,8 @@ import FinanceDeskView from './components/FinanceDeskView';
 import AutomationControlView from './components/AutomationControlView';
 import OperationalReportsView from './components/OperationalReportsView';
 import TeamManagementModal from './components/TeamManagementModal';
+import LandingPage from './components/LandingPage';
+import LoginPage from './components/LoginPage';
 
 import { authService } from './services/authService';
 import { crmService } from './services/crmService';
@@ -26,8 +28,19 @@ import { documentService } from './services/documentService';
 import { INITIAL_CLIENTS } from './data/initialClients';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
   const [staffUsers, setStaffUsers] = useState(() => authService.getAllStaffUsers());
+  const [authScreen, setAuthScreen] = useState(() => {
+    const savedId = sessionStorage.getItem('kia_auth_user_id');
+    if (savedId) {
+      const activeUser = authService.getActiveStaffUsers().find(u => u.id === savedId);
+      if (activeUser) {
+        authService.setCurrentUser(activeUser.id);
+        return 'app';
+      }
+    }
+    return 'landing';
+  });
+  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
   const [cases, setCases] = useState(() => crmService.getCases());
   const [activeTab, setActiveTab] = useState('ceo_dashboard');
   
@@ -69,6 +82,19 @@ export default function App() {
   const handleSwitchUser = (userId) => {
     const updated = authService.setCurrentUser(userId);
     setCurrentUser(updated);
+    sessionStorage.setItem('kia_auth_user_id', updated.id);
+  };
+
+  const handleLoginSuccess = (staffUser) => {
+    const updated = authService.setCurrentUser(staffUser.id);
+    setCurrentUser(updated);
+    sessionStorage.setItem('kia_auth_user_id', updated.id);
+    setAuthScreen('app');
+  };
+
+  const handleSignOut = () => {
+    sessionStorage.removeItem('kia_auth_user_id');
+    setAuthScreen('landing');
   };
 
   // Metrics
@@ -132,6 +158,17 @@ export default function App() {
             }
           }}
         />
+      ) : authScreen === 'landing' ? (
+        <LandingPage
+          onGoToLogin={() => setAuthScreen('login')}
+          onOpenClientToken={(token) => setClientUploadToken(token)}
+        />
+      ) : authScreen === 'login' ? (
+        <LoginPage
+          staffUsers={staffUsers}
+          onLoginSuccess={handleLoginSuccess}
+          onBackToWelcome={() => setAuthScreen('landing')}
+        />
       ) : (
         <>
           {/* Simulated RBAC Role Switcher Bar */}
@@ -140,6 +177,7 @@ export default function App() {
             staffUsers={staffUsers}
             onSwitchUser={handleSwitchUser}
             onOpenTeamManagement={() => setIsTeamModalOpen(true)}
+            onSignOut={handleSignOut}
           />
 
           {/* Main Navbar */}
