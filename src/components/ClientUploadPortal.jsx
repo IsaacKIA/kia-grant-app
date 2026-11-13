@@ -32,7 +32,20 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      const maxBytes = 15 * 1024 * 1024; // 15 MB
+      const allowedExt = /\.(pdf|doc|docx|png|jpg|jpeg)$/i;
+      if (!allowedExt.test(file.name)) {
+        alert('Unsupported file type. Please upload a PDF, Word (.doc/.docx), PNG, or JPG file.');
+        e.target.value = '';
+        return;
+      }
+      if (file.size > maxBytes) {
+        alert('File is too large. Maximum allowed size is 15 MB.');
+        e.target.value = '';
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -47,7 +60,7 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
         fileSize: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
         mimeType: selectedFile.type || 'application/octet-stream',
         clientNote: clientNote.trim()
-      });
+      }, token);
 
       // Refresh list
       const refreshed = documentService.getCaseRequirements(tokenStatus.tokenRecord.caseId);

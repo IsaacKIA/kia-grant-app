@@ -79,12 +79,6 @@ export default function App() {
     setCases(crmService.getCases());
   };
 
-  const handleSwitchUser = (userId) => {
-    const updated = authService.setCurrentUser(userId);
-    setCurrentUser(updated);
-    sessionStorage.setItem('kia_auth_user_id', updated.id);
-  };
-
   const handleLoginSuccess = (staffUser) => {
     const updated = authService.setCurrentUser(staffUser.id);
     setCurrentUser(updated);
@@ -92,7 +86,9 @@ export default function App() {
     setAuthScreen('app');
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await authService.signOut();
+    setCurrentUser(null);
     sessionStorage.removeItem('kia_auth_user_id');
     setAuthScreen('landing');
   };
@@ -163,19 +159,16 @@ export default function App() {
           onGoToLogin={() => setAuthScreen('login')}
           onOpenClientToken={(token) => setClientUploadToken(token)}
         />
-      ) : authScreen === 'login' ? (
+      ) : authScreen === 'login' || !currentUser ? (
         <LoginPage
-          staffUsers={staffUsers}
           onLoginSuccess={handleLoginSuccess}
           onBackToWelcome={() => setAuthScreen('landing')}
         />
       ) : (
         <>
-          {/* Simulated RBAC Role Switcher Bar */}
+          {/* Authenticated Staff Session Bar */}
           <RoleSwitcherBar
             currentUser={currentUser}
-            staffUsers={staffUsers}
-            onSwitchUser={handleSwitchUser}
             onOpenTeamManagement={() => setIsTeamModalOpen(true)}
             onSignOut={handleSignOut}
           />

@@ -1,6 +1,9 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const LOCAL_STAFF_USERS_KEY = 'kia_staff_users_v2';
+const LOCAL_CREDENTIALS_KEY = 'kia_staff_credentials_v2';
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 30000;
 
 export const STAFF_ROLE_OPTIONS = [
   {
@@ -74,13 +77,64 @@ const DEFAULT_STAFF_USERS = [
   }
 ];
 
+function generateRandomHex(bytes = 16) {
+  const arr = new Uint8Array(bytes);
+  globalThis.crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${salt}:${password}`);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function loadCredentialsMap() {
+  try {
+    const saved = localStorage.getItem(LOCAL_CREDENTIALS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load credentials:', e);
+  }
+  return {};
+}
+
+function saveCredentialsMap(map) {
+  try {
+    localStorage.setItem(LOCAL_CREDENTIALS_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.error('Failed to save credentials:', e);
+  }
+}
+
+async function ensureSeedCredentials() {
+  const existing = loadCredentialsMap();
+  if (Object.keys(existing).length > 0) return existing;
+
+  const seeded = {};
+  for (const user of DEFAULT_STAFF_USERS) {
+    const salt = generateRandomHex(16);
+    const defaultPw = user.role === 'ceo' ? 'KIA-CEO#2026' : 'KIA-Staff#2026';
+    seeded[user.id] = {
+      salt,
+      hash: await hashPassword(defaultPw, salt),
+      updatedAt: new Date().toISOString()
+    };
+  }
+  saveCredentialsMap(seeded);
+  return seeded;
+}
+
 function loadInitialStaffUsers() {
   try {
     const saved = localStorage.getItem(LOCAL_STAFF_USERS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure Founder & CEO record is always Isaac Agya Koomson
         return parsed.map(u =>
           u.id === 'staff-01'
             ? { ...u, fullName: 'Isaac Agya Koomson', role: 'ceo', roleLabel: 'Founder / CEO', isActive: true, isFounder: true }
@@ -105,7 +159,9 @@ function persistStaffUsers() {
   }
 }
 
-let currentStaffUser = STAFF_USERS[0]; // Default to Founder / CEO Isaac Agya Koomson
+// Never auto-authenticate as CEO or any staff user on startup
+let currentStaffUser = null;
+const failedLoginTracker = new Map();
 
 export const authService = {
   getCurrentUser() {
@@ -114,12 +170,145 @@ export const authService = {
 
   setCurrentUser(userOrId) {
     if (typeof userOrId === 'string') {
-      const found = STAFF_USERS.find(u => u.id === userOrId);
+      const found = STAFF_USERS.find(u => u.id === userOrId && u.isActive !== false);
       if (found) currentStaffUser = found;
-    } else if (userOrId && userOrId.id) {
+    } else if (userOrId && userOrId.id && userOrId.isActive !== false) {
       currentStaffUser = userOrId;
     }
     return currentStaffUser;
+  },
+
+  async authenticateStaff(email, password) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const rawPassword = password || '';
+
+    if (!cleanEmail || !rawPassword) {
+      throw new Error('Please enter both your staff email and password.');
+    }
+
+    const tracker = failedLoginTracker.get(cleanEmail) || { count: 0, lockedUntil: 0 };
+    if (tracker.lockedUntil > Date.now()) {
+      const secsLeft = Math.ceil((tracker.lockedUntil - Date.now()) / 1000);
+      throw new Error(`Too many failed sign-in attempts. Please wait ${secsLeft} seconds before trying again.`);
+    }
+
+    // Use live Supabase Auth if configured
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: rawPassword
+      });
+      if (error || !data?.user) {
+        const nextCount = tracker.count + 1;
+        failedLoginTracker.set(cleanEmail, {
+          count: nextCount,
+          lockedUntil: nextCount >= MAX_FAILED_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0
+        });
+        throw new Error('Invalid email or password.');
+      }
+    }
+
+    const matchedUser = STAFF_USERS.find(u => u.email.toLowerCase() === cleanEmail);
+    if (!matchedUser) {
+      const nextCount = tracker.count + 1;
+      failedLoginTracker.set(cleanEmail, {
+        count: nextCount,
+        lockedUntil: nextCount >= MAX_FAILED_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0
+      });
+      throw new Error('Invalid email or password.');
+    }
+
+    if (matchedUser.isActive === false) {
+      throw new Error('This account is inactive. Please contact the Founder & CEO.');
+    }
+
+    if (!isSupabaseConfigured) {
+      const credsMap = await ensureSeedCredentials();
+      const record = credsMap[matchedUser.id];
+      if (!record) {
+        throw new Error('No credentials configured for this account. Contact the Founder & CEO.');
+      }
+      const attemptHash = await hashPassword(rawPassword, record.salt);
+      if (attemptHash !== record.hash) {
+        const nextCount = tracker.count + 1;
+        failedLoginTracker.set(cleanEmail, {
+          count: nextCount,
+          lockedUntil: nextCount >= MAX_FAILED_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0
+        });
+        throw new Error('Invalid email or password.');
+      }
+    }
+
+    failedLoginTracker.delete(cleanEmail);
+    currentStaffUser = matchedUser;
+
+    try {
+      const { auditService } = await import('./auditService');
+      await auditService.logEvent({
+        entityType: 'staff_session',
+        entityId: matchedUser.id,
+        action: 'staff_sign_in',
+        notes: `${matchedUser.fullName} (${matchedUser.roleLabel}) signed in.`
+      });
+    } catch (e) {
+      console.warn('Audit log skipped:', e);
+    }
+
+    return matchedUser;
+  },
+
+  async changeOwnPassword(currentPassword, newPassword) {
+    if (!currentStaffUser) {
+      throw new Error('You must be signed in to change your password.');
+    }
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('New password must be at least 8 characters long.');
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message);
+      return true;
+    }
+
+    const credsMap = await ensureSeedCredentials();
+    const record = credsMap[currentStaffUser.id];
+    if (record) {
+      const currentHash = await hashPassword(currentPassword || '', record.salt);
+      if (currentHash !== record.hash) {
+        throw new Error('Current password is incorrect.');
+      }
+    }
+
+    const newSalt = generateRandomHex(16);
+    credsMap[currentStaffUser.id] = {
+      salt: newSalt,
+      hash: await hashPassword(newPassword, newSalt),
+      updatedAt: new Date().toISOString()
+    };
+    saveCredentialsMap(credsMap);
+    return true;
+  },
+
+  async signOut() {
+    const actor = currentStaffUser;
+    currentStaffUser = null;
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
+    if (actor) {
+      try {
+        const { auditService } = await import('./auditService');
+        await auditService.logEvent({
+          entityType: 'staff_session',
+          entityId: actor.id,
+          action: 'staff_sign_out',
+          notes: `${actor.fullName} signed out.`
+        });
+      } catch (e) {
+        console.warn('Audit log skipped:', e);
+      }
+    }
   },
 
   getAllStaffUsers() {
@@ -134,8 +323,8 @@ export const authService = {
     return STAFF_USERS.find(u => u.id === id) || null;
   },
 
-  async addTeamMember({ fullName, email, phone = '', role, roleLabel }) {
-    if (currentStaffUser.role !== 'ceo') {
+  async addTeamMember({ fullName, email, phone = '', role, roleLabel, initialPassword }) {
+    if (!currentStaffUser || currentStaffUser.role !== 'ceo') {
       throw new Error('ACCESS DENIED: Only the Founder & CEO (Isaac Agya Koomson) can add team members.');
     }
 
@@ -166,6 +355,17 @@ export const authService = {
     STAFF_USERS.push(newMember);
     persistStaffUsers();
 
+    // Provision per-user salted password hash
+    const tempPassword = (initialPassword || '').trim() || `KIA-${generateRandomHex(4)}`;
+    const credsMap = await ensureSeedCredentials();
+    const salt = generateRandomHex(16);
+    credsMap[newMember.id] = {
+      salt,
+      hash: await hashPassword(tempPassword, salt),
+      updatedAt: new Date().toISOString()
+    };
+    saveCredentialsMap(credsMap);
+
     try {
       const { auditService } = await import('./auditService');
       await auditService.logEvent({
@@ -179,11 +379,11 @@ export const authService = {
       console.warn('Audit log skipped:', e);
     }
 
-    return newMember;
+    return { ...newMember, tempPassword };
   },
 
   async updateTeamMemberRole(memberId, newRole, newRoleLabel) {
-    if (currentStaffUser.role !== 'ceo') {
+    if (!currentStaffUser || currentStaffUser.role !== 'ceo') {
       throw new Error('ACCESS DENIED: Only the Founder & CEO (Isaac Agya Koomson) can change team member roles.');
     }
 
@@ -217,7 +417,7 @@ export const authService = {
   },
 
   async toggleTeamMemberStatus(memberId) {
-    if (currentStaffUser.role !== 'ceo') {
+    if (!currentStaffUser || currentStaffUser.role !== 'ceo') {
       throw new Error('ACCESS DENIED: Only the Founder & CEO (Isaac Agya Koomson) can activate or deactivate users.');
     }
 

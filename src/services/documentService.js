@@ -292,10 +292,13 @@ export const documentService = {
     };
   },
 
-  // Secure Token Generation for Client Upload Links
+  // Secure Token Generation for Client Upload Links (256-bit CSPRNG)
   generateUploadToken(caseId, clientName, expiresInHours = 72) {
     const currentStaff = authService.getCurrentUser();
-    const rawToken = `tok_live_${Math.random().toString(36).substr(2, 9)}_${Date.now().toString(36)}`;
+    const randomBytes = new Uint8Array(32);
+    globalThis.crypto.getRandomValues(randomBytes);
+    const hexEntropy = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
+    const rawToken = `tok_live_${hexEntropy}`;
     const expiresAt = new Date(Date.now() + expiresInHours * 3600000).toISOString();
 
     const tokenRecord = {
@@ -362,10 +365,20 @@ export const documentService = {
   },
 
   // Client uploads file against a requirement
-  async uploadClientFile(requirementId, { fileName, fileSize, mimeType, clientNote = '' }) {
+  async uploadClientFile(requirementId, { fileName, fileSize, mimeType, clientNote = '' }, tokenString = null) {
     const allReqs = this.getCaseRequirements();
     const req = allReqs.find(r => r.id === requirementId);
     if (!req) throw new Error('Requirement not found');
+
+    if (tokenString) {
+      const tokenCheck = this.validateUploadToken(tokenString);
+      if (!tokenCheck.valid) {
+        throw new Error(tokenCheck.error || 'Invalid upload token.');
+      }
+      if (tokenCheck.tokenRecord.caseId !== req.caseId) {
+        throw new Error('ACCESS DENIED: Upload token does not match this client case.');
+      }
+    }
 
     const uploadedFile = {
       id: `file-${Date.now().toString().slice(-6)}`,

@@ -40,7 +40,7 @@ export default function TeamManagementModal({ isOpen, onClose, currentUser, onTe
       setFullName('');
       setEmail('');
       setPhone('');
-      setSuccessMsg(`Added ${added.fullName} as ${added.roleLabel}.`);
+      setSuccessMsg(`Added ${added.fullName} as ${added.roleLabel}. Temporary password: ${added.tempPassword}`);
       refreshList();
     } catch (err) {
       setErrorMsg(err.message);
@@ -105,7 +105,7 @@ export default function TeamManagementModal({ isOpen, onClose, currentUser, onTe
               <div>
                 <strong className="block font-bold">Read-Only View — Founder / CEO Authorization Required</strong>
                 <p className="mt-0.5 text-amber-800">
-                  Only the Founder & CEO (<strong>Isaac Agya Koomson</strong>) can add team members or assign/change user roles. Switch to Isaac Agya Koomson in the top role bar to manage staff.
+                  Only the Founder &amp; CEO (<strong>Isaac Agya Koomson</strong>) can add team members or assign/change user roles. Sign out and sign in as the Founder &amp; CEO to manage staff.
                 </p>
               </div>
             </div>
