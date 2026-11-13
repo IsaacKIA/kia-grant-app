@@ -376,13 +376,16 @@ export const applicationService = {
         notes: `Auto-generated upon grant award confirmation for ${target.applicationNumber}.`
       });
 
+      const financeOfficer = STAFF_USERS.find(u => u.role === 'finance_officer' && u.isActive !== false)
+        || STAFF_USERS[0];
+
       await taskService.createTask({
         caseId: target.caseId,
         clientName: target.clientName,
         title: `Collect Contractual Success Fee: GH₵ ${successFee.toLocaleString()}`,
         description: `Client awarded GH₵ ${parsedAmount.toLocaleString()} from ${target.grantTitle}. 5% success fee invoice has been issued; follow up and confirm payment.`,
         priority: 'urgent',
-        assignedToId: 'staff-05', // Emmanuel Darko (Finance)
+        assignedToId: financeOfficer?.id || 'staff-01',
         dueDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0]
       });
     }

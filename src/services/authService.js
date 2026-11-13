@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const LOCAL_STAFF_USERS_KEY = 'kia_staff_users_v2';
-const LOCAL_CREDENTIALS_KEY = 'kia_staff_credentials_v2';
+const LOCAL_STAFF_USERS_KEY = 'kia_staff_users_v3';
+const LOCAL_CREDENTIALS_KEY = 'kia_staff_credentials_v3';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MS = 30000;
 
@@ -31,49 +31,13 @@ export const STAFF_ROLE_OPTIONS = [
 const DEFAULT_STAFF_USERS = [
   {
     id: 'staff-01',
-    email: 'ceo@kia-startup.com',
+    email: 'info@kiastartupconsult.com',
     fullName: 'Isaac Agya Koomson',
     role: 'ceo',
     roleLabel: 'Founder / CEO',
     phone: '+233 24 411 2233',
     isActive: true,
     isFounder: true
-  },
-  {
-    id: 'staff-02',
-    email: 'teamlead@kia-startup.com',
-    fullName: 'Abena Osei',
-    role: 'team_leader',
-    roleLabel: 'Grant Application Team Leader',
-    phone: '+233 20 812 3456',
-    isActive: true
-  },
-  {
-    id: 'staff-03',
-    email: 'kofi.officer@kia-startup.com',
-    fullName: 'Kofi Mensah',
-    role: 'application_officer',
-    roleLabel: 'Senior Application Officer',
-    phone: '+233 55 923 4567',
-    isActive: true
-  },
-  {
-    id: 'staff-04',
-    email: 'efua.officer@kia-startup.com',
-    fullName: 'Efua Addo',
-    role: 'application_officer',
-    roleLabel: 'Application Officer',
-    phone: '+233 27 654 3210',
-    isActive: true
-  },
-  {
-    id: 'staff-05',
-    email: 'finance@kia-startup.com',
-    fullName: 'Emmanuel Darko',
-    role: 'finance_officer',
-    roleLabel: 'Finance & Admin Officer',
-    phone: '+233 24 789 0123',
-    isActive: true
   }
 ];
 
@@ -118,7 +82,7 @@ async function ensureSeedCredentials() {
   const seeded = {};
   for (const user of DEFAULT_STAFF_USERS) {
     const salt = generateRandomHex(16);
-    const defaultPw = user.role === 'ceo' ? 'KIA-CEO#2026' : 'KIA-Staff#2026';
+    const defaultPw = user.role === 'ceo' ? 'Kiastartup2026' : 'KIA-Staff#2026';
     seeded[user.id] = {
       salt,
       hash: await hashPassword(defaultPw, salt),
@@ -137,7 +101,15 @@ function loadInitialStaffUsers() {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(u =>
           u.id === 'staff-01'
-            ? { ...u, fullName: 'Isaac Agya Koomson', role: 'ceo', roleLabel: 'Founder / CEO', isActive: true, isFounder: true }
+            ? {
+                ...u,
+                email: 'info@kiastartupconsult.com',
+                fullName: 'Isaac Agya Koomson',
+                role: 'ceo',
+                roleLabel: 'Founder / CEO',
+                isActive: true,
+                isFounder: true
+              }
             : u
         );
       }

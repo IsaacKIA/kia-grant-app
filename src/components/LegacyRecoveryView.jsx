@@ -12,7 +12,7 @@ export default function LegacyRecoveryView({ onReconciledCase }) {
   const [search, setSearch] = useState('');
   
   // Reconcile modal form
-  const [officerId, setOfficerId] = useState(STAFF_USERS[2]?.id || 'staff-03');
+  const [officerId, setOfficerId] = useState(STAFF_USERS[0]?.id || 'staff-01');
   const [feeVerified, setFeeVerified] = useState(false);
   const [transactionRef, setTransactionRef] = useState('');
   const [reconciliationNotes, setReconciliationNotes] = useState('');

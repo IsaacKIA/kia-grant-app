@@ -47,8 +47,29 @@ async function runAllScenarios() {
   const { crmService } = await import('../services/crmService.js');
   const { authService } = await import('../services/authService.js');
 
+  // Authenticate as CEO first and provision test staff accounts
+  await authService.authenticateStaff('info@kiastartupconsult.com', 'Kiastartup2026');
+  const teamLeader = await authService.addTeamMember({
+    fullName: 'Abena Osei',
+    email: 'teamlead@kiastartupconsult.com',
+    role: 'team_leader',
+    roleLabel: 'Grant Application Team Leader'
+  });
+  const officer = await authService.addTeamMember({
+    fullName: 'Kofi Mensah',
+    email: 'kofi@kiastartupconsult.com',
+    role: 'application_officer',
+    roleLabel: 'Senior Application Officer'
+  });
+  const financeOfficer = await authService.addTeamMember({
+    fullName: 'Emmanuel Darko',
+    email: 'finance@kiastartupconsult.com',
+    role: 'finance_officer',
+    roleLabel: 'Finance & Admin Officer'
+  });
+
   // Ensure active user is Team Leader / Officer
-  authService.setCurrentUser('staff-02'); // Abena Osei
+  authService.setCurrentUser(teamLeader.id); // Abena Osei
 
   const testCase = await crmService.registerClient({
     legalName: 'Volta Green Agrotech Ltd',
@@ -191,11 +212,11 @@ async function runAllScenarios() {
   assert(successFeeInv !== undefined, '5% contractual success fee invoice automatically generated');
   assert(successFeeInv.totalAmount === 7500, `Success fee invoice amount accurate (GH₵ ${successFeeInv.totalAmount})`);
 
-  // Verify that success fee collection task was automatically issued to Finance Officer Emmanuel Darko (staff-05)
+  // Verify that success fee collection task was automatically issued to Finance Officer Emmanuel Darko
   const tasksAfterAward = taskService.getTasks();
   const feeTask = tasksAfterAward.find(t => t.caseId === testCase.id && t.title.includes('Success Fee'));
   assert(feeTask !== undefined, 'Success fee collection task dispatched to Finance Desk');
-  assert(feeTask.assignedToId === 'staff-05', 'Success fee task assigned specifically to Finance Officer Emmanuel Darko');
+  assert(feeTask.assignedToId === financeOfficer.id, 'Success fee task assigned specifically to Finance Officer Emmanuel Darko');
 
   // 8. BACKGROUND AUTOMATION & INACTIVITY RADAR
   console.log('\n--- SCENARIO 8: Background Inactivity Radar & Deadline Scanner ---');

@@ -30,7 +30,7 @@ export default function NewClientIntakeModal({ isOpen, onClose, onClientRegister
 
     // Step 3: Engagement Terms & Ownership
     targetGrantSize: 'GHS 100,000 – GHS 500,000',
-    assignedOfficerId: officers[0]?.id || 'staff-03',
+    assignedOfficerId: officers[0]?.id || STAFF_USERS[0]?.id || 'staff-01',
     engagementFeeAmount: 200,
     feePaymentMethod: 'momo_mtn',
     feeTransactionRef: '',

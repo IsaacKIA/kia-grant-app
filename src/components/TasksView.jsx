@@ -25,7 +25,7 @@ export default function TasksView() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskClient, setNewTaskClient] = useState('');
-  const [newTaskOfficerId, setNewOfficerIdForm] = useState(STAFF_USERS[2]?.id || 'staff-03');
+  const [newTaskOfficerId, setNewOfficerIdForm] = useState(STAFF_USERS[0]?.id || 'staff-01');
   const [newTaskDue, setNewTaskDue] = useState(new Date().toISOString().split('T')[0]);
   const [newTaskPriority, setNewTaskPriority] = useState('medium');
 
