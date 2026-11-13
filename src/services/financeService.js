@@ -21,7 +21,7 @@ const SEED_INVOICES = [
     id: 'inv-001',
     invoiceNumber: 'INV-2026-001',
     caseId: 'case-001',
-    clientName: 'AgroFresh Processing Hub',
+    clientName: 'Cocoveg Farms',
     applicantType: 'SME',
     invoiceType: 'engagement_fee',
     currency: 'GHS',
@@ -54,8 +54,8 @@ const SEED_INVOICES = [
     id: 'inv-002',
     invoiceNumber: 'INV-2026-002',
     caseId: 'case-002',
-    clientName: 'Savannah Shea Butter Cooperative',
-    applicantType: 'Cooperative',
+    clientName: 'Amacares',
+    applicantType: 'SME',
     invoiceType: 'engagement_fee',
     currency: 'GHS',
     items: [
@@ -87,7 +87,7 @@ const SEED_INVOICES = [
     id: 'inv-003',
     invoiceNumber: 'INV-2026-003',
     caseId: 'case-003',
-    clientName: 'HealthPoint Diagnostics Labs',
+    clientName: 'Union Farms',
     applicantType: 'SME',
     invoiceType: 'engagement_fee',
     currency: 'GHS',
@@ -120,7 +120,7 @@ const SEED_INVOICES = [
     id: 'inv-004',
     invoiceNumber: 'INV-2026-004',
     caseId: 'case-003',
-    clientName: 'HealthPoint Diagnostics Labs',
+    clientName: 'Union Farms',
     applicantType: 'SME',
     invoiceType: 'success_fee',
     currency: 'GHS',
@@ -157,7 +157,7 @@ const SEED_PAYMENTS = [
     receiptNumber: 'REC-2026-001',
     invoiceId: 'inv-001',
     caseId: 'case-001',
-    clientName: 'AgroFresh Processing Hub',
+    clientName: 'Cocoveg Farms',
     amount: 200,
     paymentMethod: 'MTN Mobile Money',
     transactionReference: 'TXN-MM-89230192',
@@ -175,7 +175,7 @@ const SEED_PAYMENTS = [
     receiptNumber: 'REC-2026-002',
     invoiceId: 'inv-003',
     caseId: 'case-003',
-    clientName: 'HealthPoint Diagnostics Labs',
+    clientName: 'Union Farms',
     amount: 200,
     paymentMethod: 'Bank Transfer (GCB)',
     transactionReference: 'GCB-TRF-004921',
@@ -417,6 +417,7 @@ class FinanceService {
 
     if (canAutoVerify) {
       this.recalculateInvoiceStatus(invoiceId);
+      await this.syncEngagementFeeToCrm(invoiceId, currentUser.id, transactionReference);
     }
 
     await auditService.logAction({
@@ -457,6 +458,7 @@ class FinanceService {
     // Recalculate invoice paid amount
     if (payment.invoiceId) {
       this.recalculateInvoiceStatus(payment.invoiceId);
+      await this.syncEngagementFeeToCrm(payment.invoiceId, currentUser.id, payment.transactionReference);
     }
 
     await auditService.logAction({
@@ -493,6 +495,39 @@ class FinanceService {
     }
 
     this.saveInvoices([...this.invoices]);
+  }
+
+  async syncEngagementFeeToCrm(invoiceId, verifiedById, transactionRef) {
+    const inv = this.invoices.find(i => i.id === invoiceId);
+    if (!inv || inv.invoiceType !== 'engagement_fee' || inv.status !== 'paid' || !inv.caseId) return;
+
+    try {
+      const { crmService } = await import('./crmService');
+      const cases = crmService.getCases();
+      const target = cases.find(c => c.id === inv.caseId);
+      if (!target) return;
+
+      const updated = cases.map(c => {
+        if (c.id === inv.caseId) {
+          return {
+            ...c,
+            status: c.status === 'onboarding_fee_pending' ? 'documentation' : c.status,
+            lastActivityAt: new Date().toISOString(),
+            engagementFee: {
+              ...c.engagementFee,
+              amountPaid: inv.amountPaid,
+              isVerified: true,
+              verifiedBy: verifiedById,
+              transactionRef: transactionRef || c.engagementFee?.transactionRef || inv.invoiceNumber
+            }
+          };
+        }
+        return c;
+      });
+      crmService.saveCases(updated);
+    } catch (e) {
+      console.warn('CRM fee sync skipped:', e);
+    }
   }
 }
 

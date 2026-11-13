@@ -17,6 +17,7 @@ import GrantCatalogueView from './components/GrantCatalogueView';
 import FinanceDeskView from './components/FinanceDeskView';
 import AutomationControlView from './components/AutomationControlView';
 import OperationalReportsView from './components/OperationalReportsView';
+import TeamManagementModal from './components/TeamManagementModal';
 
 import { authService } from './services/authService';
 import { crmService } from './services/crmService';
@@ -26,6 +27,7 @@ import { INITIAL_CLIENTS } from './data/initialClients';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
+  const [staffUsers, setStaffUsers] = useState(() => authService.getAllStaffUsers());
   const [cases, setCases] = useState(() => crmService.getCases());
   const [activeTab, setActiveTab] = useState('ceo_dashboard');
   
@@ -38,6 +40,7 @@ export default function App() {
   // Modals
   const [selectedCaseForDossier, setSelectedCaseForDossier] = useState(null);
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   
   // Pipeline & legacy compatibility state
   const [legacyClients, setLegacyClients] = useState(() => {
@@ -134,7 +137,9 @@ export default function App() {
           {/* Simulated RBAC Role Switcher Bar */}
           <RoleSwitcherBar
             currentUser={currentUser}
+            staffUsers={staffUsers}
             onSwitchUser={handleSwitchUser}
+            onOpenTeamManagement={() => setIsTeamModalOpen(true)}
           />
 
           {/* Main Navbar */}
@@ -155,6 +160,7 @@ export default function App() {
               <CeoDashboardView
                 onNavigateTab={(tab) => setActiveTab(tab)}
                 onOpenNewClient={() => setIsNewClientOpen(true)}
+                onOpenTeamManagement={() => setIsTeamModalOpen(true)}
               />
             )}
 
@@ -259,6 +265,13 @@ export default function App() {
         isOpen={isNewClientOpen}
         onClose={() => setIsNewClientOpen(false)}
         onClientRegistered={handleClientRegistered}
+      />
+
+      <TeamManagementModal
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+        currentUser={currentUser}
+        onTeamUpdated={(updated) => setStaffUsers(updated)}
       />
         </>
       )}

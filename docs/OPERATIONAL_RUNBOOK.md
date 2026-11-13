@@ -146,3 +146,4 @@ The system continuously scans operations via `automationService`:
 ---
 
 *KIA Grant Management System 2.0 • Confidential & Proprietary to KIA-START UP CONSULT LTD • Accra, Ghana*
+

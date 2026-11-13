@@ -32,19 +32,19 @@ export default function Navbar({
                   v2.0
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Enterprise Grant Management & Operational Recovery System</p>
+              <p className="text-xs text-slate-400">Client & Grant Operations System</p>
             </div>
           </div>
 
           {/* Quick Metrics Header */}
           <div className="hidden md:flex items-center space-x-4 text-xs">
             <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center space-x-2">
-              <span className="text-slate-400">Active Cases:</span>
+              <span className="text-slate-400">Active Clients:</span>
               <span className="font-bold text-white text-sm">{clientCount}</span>
             </div>
 
             <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center space-x-2">
-              <span className="text-slate-400">Verified Fees:</span>
+              <span className="text-slate-400">Confirmed Fees:</span>
               <span className="font-bold text-emerald-400 text-sm">GH₵ {verifiedFees.toLocaleString()}</span>
             </div>
 
@@ -60,7 +60,7 @@ export default function Navbar({
               className="flex items-center space-x-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3.5 py-2 rounded-xl shadow-sm transition-all text-xs"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Onboard Client</span>
+              <span>Add New Client</span>
             </button>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function Navbar({
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Executive Radar</span>
+            <span>Overview</span>
           </button>
 
           {/* CRM */}
@@ -90,7 +90,7 @@ export default function Navbar({
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Client CRM ({clientCount})</span>
+            <span>Clients ({clientCount})</span>
           </button>
 
           {/* Documents Hub */}
@@ -103,7 +103,7 @@ export default function Navbar({
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Documents Hub</span>
+            <span>Documents</span>
             {underReviewDocsCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1" />
             )}
@@ -119,7 +119,7 @@ export default function Navbar({
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            <span>Tasks & Accountability</span>
+            <span>Tasks</span>
             {overdueTasksCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-1" />
             )}
@@ -135,7 +135,7 @@ export default function Navbar({
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Applications Pipeline</span>
+            <span>Applications</span>
           </button>
 
           {/* Grant Catalogue */}
@@ -148,7 +148,7 @@ export default function Navbar({
             }`}
           >
             <Award className="w-3.5 h-3.5" />
-            <span>Grant Catalogue</span>
+            <span>Grants</span>
           </button>
 
           {/* Grant Matcher */}
@@ -161,7 +161,7 @@ export default function Navbar({
             }`}
           >
             <Target className="w-3.5 h-3.5" />
-            <span>Grant Matcher</span>
+            <span>Match Grants</span>
           </button>
 
           {/* Readiness Diagnostic */}
@@ -174,7 +174,7 @@ export default function Navbar({
             }`}
           >
             <Calculator className="w-3.5 h-3.5" />
-            <span>Readiness Diagnostic</span>
+            <span>Readiness Check</span>
           </button>
 
           {/* Finance & Fees */}
@@ -187,7 +187,7 @@ export default function Navbar({
             }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
-            <span>Finance Desk</span>
+            <span>Payments & Fees</span>
           </button>
 
           {/* Automation Radar */}
@@ -200,7 +200,7 @@ export default function Navbar({
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
-            <span>Automation Radar</span>
+            <span>Reminders</span>
           </button>
 
           {/* Operational Reports */}
@@ -213,7 +213,7 @@ export default function Navbar({
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Operational Reports</span>
+            <span>Reports</span>
           </button>
 
           {/* Legacy Recovery */}
@@ -226,7 +226,7 @@ export default function Navbar({
             }`}
           >
             <Database className="w-3.5 h-3.5 text-amber-400" />
-            <span>Legacy Recovery</span>
+            <span>Old Records</span>
           </button>
         </div>
       </div>

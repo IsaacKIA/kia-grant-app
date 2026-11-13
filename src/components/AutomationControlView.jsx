@@ -31,13 +31,13 @@ export default function AutomationControlView({ onNavigateCase }) {
         <div>
           <span className="text-[11px] uppercase tracking-wider font-extrabold text-amber-600 flex items-center space-x-1.5">
             <Zap className="w-3.5 h-3.5" />
-            <span>Autonomous Operational Supervision</span>
+            <span>Automatic Checks & Reminders</span>
           </span>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-1">
-            Background Automation & Escalation Radar
+            Automatic Reminders & Alerts
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Continuous background surveillance monitoring case inactivity (over 7d warning, over 14d CEO escalation), funder submission deadlines, and document chase workflows.
+            Checks for quiet client files (7+ or 14+ days without updates), upcoming grant deadlines, and missing client documents.
           </p>
         </div>
 
@@ -50,12 +50,12 @@ export default function AutomationControlView({ onNavigateCase }) {
             {isRunning ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Running System Audit...</span>
+                <span>Checking All Files...</span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 fill-current" />
-                <span>Run Scheduled Audit Now</span>
+                <span>Check All Files Now</span>
               </>
             )}
           </button>

@@ -358,14 +358,29 @@ export const applicationService = {
 
     this.saveApplications(updated);
 
-    // If awarded, calculate 5% contractual success fee obligation
+    // If awarded, calculate 5% contractual success fee obligation and issue invoice
     if (isAwarded && parsedAmount > 0) {
       const successFee = Math.round(parsedAmount * 0.05); // 5% standard success fee
+      const { financeService } = await import('./financeService');
+      await financeService.createInvoice({
+        caseId: target.caseId,
+        clientName: target.clientName,
+        invoiceType: 'success_fee',
+        items: [
+          {
+            description: `Contractual Success Fee (5%) on Grant Award: ${target.grantTitle} (GH₵ ${parsedAmount.toLocaleString()} awarded)`,
+            quantity: 1,
+            unitPrice: successFee
+          }
+        ],
+        notes: `Auto-generated upon grant award confirmation for ${target.applicationNumber}.`
+      });
+
       await taskService.createTask({
         caseId: target.caseId,
         clientName: target.clientName,
-        title: `Reconcile Contractual Success Fee: GH₵ ${successFee.toLocaleString()}`,
-        description: `Client awarded GH₵ ${parsedAmount.toLocaleString()} from ${target.grantTitle}. Issue 5% success fee invoice per signed agreement.`,
+        title: `Collect Contractual Success Fee: GH₵ ${successFee.toLocaleString()}`,
+        description: `Client awarded GH₵ ${parsedAmount.toLocaleString()} from ${target.grantTitle}. 5% success fee invoice has been issued; follow up and confirm payment.`,
         priority: 'urgent',
         assignedToId: 'staff-05', // Emmanuel Darko (Finance)
         dueDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0]

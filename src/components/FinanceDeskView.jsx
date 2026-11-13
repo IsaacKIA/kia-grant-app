@@ -139,13 +139,13 @@ export default function FinanceDeskView() {
         <div>
           <span className="text-[11px] uppercase tracking-wider font-extrabold text-amber-600 flex items-center space-x-1.5">
             <DollarSign className="w-3.5 h-3.5" />
-            <span>Financial Controls & Revenue Ledger</span>
+            <span>Payments & Invoices</span>
           </span>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-1">
-            Finance & Fee Reconciliation Desk
+            Client Fees & Payment Records
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Track onboarding engagement agreements (GH₵ {DEFAULT_ENGAGEMENT_FEE}), contractual success fees ({DEFAULT_SUCCESS_FEE_PERCENTAGE}%), official invoices, and segregation of duties.
+            Create invoices for onboarding fees (GH₵ {DEFAULT_ENGAGEMENT_FEE}) and success fees ({DEFAULT_SUCCESS_FEE_PERCENTAGE}%), record payments, and confirm Mobile Money or bank transfers.
           </p>
         </div>
 
@@ -371,7 +371,7 @@ export default function FinanceDeskView() {
                       <button
                         onClick={() => {
                           if (!canVerify) {
-                            alert('Restricted: Switch active user role to Finance Officer Emmanuel Darko or CEO Kwame Boateng to perform payment reconciliation.');
+                            alert('Restricted: Switch active user role to Finance Officer Emmanuel Darko or CEO Isaac Agya Koomson to perform payment reconciliation.');
                             return;
                           }
                           setVerifyingPayment(p);

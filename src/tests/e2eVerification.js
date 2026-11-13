@@ -176,8 +176,9 @@ async function runAllScenarios() {
   assert(submittedApp.status === 'submitted', 'Application transitioned to submitted state');
   assert(submittedApp.submissionReferenceNumber === 'GIZ-GH-2026-98124', 'Submission reference permanently sealed');
 
-  // 7. GRANT AWARD & 5% SUCCESS FEE TASK
+  // 7. GRANT AWARD & 5% SUCCESS FEE INVOICE + TASK
   console.log('\n--- SCENARIO 7: Grant Award & Success Fee Invoicing ---');
+  const { financeService } = await import('../services/financeService.js');
   const awardedApp = await applicationService.recordOutcome(app.id, {
     outcomeStatus: 'awarded',
     awardedAmount: 150000,
@@ -185,10 +186,15 @@ async function runAllScenarios() {
   });
   assert(awardedApp.status === 'awarded', 'Application status recorded as Awarded');
   
-  // Verify that success fee reconciliation task was automatically issued to Finance Officer Emmanuel Darko (staff-05)
+  const caseInvoices = financeService.getInvoicesByCaseId(testCase.id);
+  const successFeeInv = caseInvoices.find(i => i.invoiceType === 'success_fee');
+  assert(successFeeInv !== undefined, '5% contractual success fee invoice automatically generated');
+  assert(successFeeInv.totalAmount === 7500, `Success fee invoice amount accurate (GH₵ ${successFeeInv.totalAmount})`);
+
+  // Verify that success fee collection task was automatically issued to Finance Officer Emmanuel Darko (staff-05)
   const tasksAfterAward = taskService.getTasks();
   const feeTask = tasksAfterAward.find(t => t.caseId === testCase.id && t.title.includes('Success Fee'));
-  assert(feeTask !== undefined, 'Success fee reconciliation task dispatched to Finance Desk');
+  assert(feeTask !== undefined, 'Success fee collection task dispatched to Finance Desk');
   assert(feeTask.assignedToId === 'staff-05', 'Success fee task assigned specifically to Finance Officer Emmanuel Darko');
 
   // 8. BACKGROUND AUTOMATION & INACTIVITY RADAR

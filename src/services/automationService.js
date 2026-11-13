@@ -128,12 +128,12 @@ class AutomationService {
         if (!hasEscalationTask) {
           await taskService.createTask({
             caseId: c.id,
+            clientName: c.tradingName,
             title: `CRITICAL INACTIVITY ESCALATION: ${c.tradingName} (${daysInactive} days dormant)`,
             description: `Automated Radar detected that case ${c.caseNumber} has had zero staff or client activity for ${daysInactive} days. Immediate CEO & Team Leader intervention required.`,
-            assignedOfficerId: c.currentOfficerId,
+            assignedToId: c.currentOfficerId,
             dueDate: new Date(now.getTime() + 1 * 86400000).toISOString().split('T')[0],
-            priority: 'urgent',
-            taskType: 'management_escalation'
+            priority: 'urgent'
           });
           auditResults.tasksCreatedCount++;
         }
@@ -149,12 +149,12 @@ class AutomationService {
 
     // 2. SCAN APPLICATIONS FOR DEADLINES
     for (const app of applications) {
-      if (app.currentStage === 'submitted' || app.currentStage === 'awarded' || app.currentStage === 'unsuccessful') {
+      if (app.status === 'submitted' || app.status === 'awarded' || app.status === 'rejected') {
         continue;
       }
 
       const grant = grants.find(g => g.id === app.opportunityId);
-      const closingDateStr = app.closingDate || grant?.closingDate;
+      const closingDateStr = app.funderDeadline || grant?.closingDate;
       if (!closingDateStr) continue;
 
       const closingDate = new Date(closingDateStr);
@@ -169,11 +169,11 @@ class AutomationService {
           grantTitle: app.grantTitle,
           daysUntilDeadline,
           closingDate: closingDateStr,
-          stage: app.currentStage,
+          stage: app.status,
           severity
         });
 
-        if (daysUntilDeadline <= 3 && app.currentStage !== 'internal_qa') {
+        if (daysUntilDeadline <= 3 && app.status !== 'internal_review' && app.status !== 'approved_for_submission') {
           // Check if urgent deadline task already exists
           const existingTasks = taskService.getTasksByCaseId(app.caseId);
           const hasDeadlineTask = existingTasks.some(t => t.title.includes('DEADLINE CRITICAL') && t.status !== 'completed');
@@ -181,12 +181,12 @@ class AutomationService {
           if (!hasDeadlineTask) {
             await taskService.createTask({
               caseId: app.caseId,
+              clientName: app.clientName,
               title: `DEADLINE CRITICAL (${daysUntilDeadline}d remaining): ${app.grantTitle}`,
-              description: `Application ${app.applicationNumber} closes on ${closingDateStr}. Currently in '${app.currentStage}'. Complete narrative/budget and route to Internal QA immediately.`,
-              assignedOfficerId: app.assignedOfficerId,
+              description: `Application ${app.applicationNumber} closes on ${closingDateStr}. Currently in '${app.status}'. Complete narrative/budget and route to Internal QA immediately.`,
+              assignedToId: app.assignedOfficerId,
               dueDate: new Date(now.getTime() + 1 * 86400000).toISOString().split('T')[0],
-              priority: 'urgent',
-              taskType: 'grant_application_submission'
+              priority: 'urgent'
             });
             auditResults.tasksCreatedCount++;
           }

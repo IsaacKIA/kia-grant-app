@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { dashboardService } from '../services/dashboardService';
 
-export default function CeoDashboardView({ onNavigateTab, onOpenNewClient }) {
+export default function CeoDashboardView({ onNavigateTab, onOpenNewClient, onOpenTeamManagement }) {
   const metrics = dashboardService.getCeoMetrics();
 
   return (
@@ -16,29 +16,38 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient }) {
           <div>
             <div className="flex items-center space-x-2 text-amber-400 font-extrabold uppercase tracking-wider text-xs">
               <Activity className="w-4 h-4" />
-              <span>Executive Management Control Center</span>
+              <span>Management Overview</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white mt-1">
-              Departmental Operational Radar
+              Today&apos;s Office Overview
             </h1>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Live snapshot of client onboarding, case velocity, task escalations, and fee reconciliation across KIA-START UP CONSULT.
+              See active clients, overdue tasks, missing documents, and confirmed payments in one place.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {onOpenTeamManagement && (
+              <button
+                onClick={onOpenTeamManagement}
+                className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"
+              >
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                <span>Team & Roles</span>
+              </button>
+            )}
             <button
               onClick={() => onNavigateTab('legacy_recovery')}
               className="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"
             >
-              <span>Legacy Recovery ({metrics.quarantinedLegacyCount})</span>
+              <span>Old Records ({metrics.quarantinedLegacyCount})</span>
             </button>
             <button
               onClick={onOpenNewClient}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-1.5"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Onboard Client</span>
+              <span>Add New Client</span>
             </button>
           </div>
         </div>
@@ -51,11 +60,11 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient }) {
             <div className="flex items-center space-x-2">
               <ShieldAlert className="w-5 h-5 text-rose-600 animate-pulse" />
               <h3 className="text-sm font-extrabold text-rose-900 uppercase tracking-wide">
-                Immediate Attention Required ({metrics.criticalAttentionItems.length} Operational Flags)
+                Needs Attention Now ({metrics.criticalAttentionItems.length} Alerts)
               </h3>
             </div>
             <span className="text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
-              Escalation SLA Breaches
+              Overdue / Urgent
             </span>
           </div>
 

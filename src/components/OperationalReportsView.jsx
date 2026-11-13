@@ -22,9 +22,12 @@ export default function OperationalReportsView() {
 
   // Calculate metrics
   const overdueTasks = tasks.filter(t => t.status !== 'completed' && t.dueDate < new Date().toISOString().split('T')[0]);
-  const activeApplications = applications.filter(a => a.currentStage !== 'submitted' && a.currentStage !== 'awarded' && a.currentStage !== 'unsuccessful');
-  const submittedApplications = applications.filter(a => a.currentStage === 'submitted' || a.currentStage === 'under_funder_review');
-  const awardedApplications = applications.filter(a => a.currentStage === 'awarded');
+  const activeApplications = applications.filter(a => a.status !== 'submitted' && a.status !== 'awarded' && a.status !== 'rejected');
+  const submittedApplications = applications.filter(a => a.status === 'submitted' || a.status === 'under_funder_review');
+  const awardedApplications = applications.filter(a => a.status === 'awarded');
+  const submissionRate = applications.length > 0
+    ? Math.round(((submittedApplications.length + awardedApplications.length) / applications.length) * 100)
+    : 0;
   const pendingDocsCount = requirements.filter(r => r.status === 'uploaded' || r.status === 'under_review').length;
 
   return (
@@ -34,13 +37,13 @@ export default function OperationalReportsView() {
         <div>
           <span className="text-[11px] uppercase tracking-wider font-extrabold text-amber-600 flex items-center space-x-1.5">
             <FileText className="w-3.5 h-3.5" />
-            <span>Management & Executive Intelligence</span>
+            <span>Office Reports</span>
           </span>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-1">
-            Operational Reporting Suite
+            Daily, Weekly & Monthly Reports
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time executive summaries, team workload distribution, submission pacing, and fee reconciliation for management review.
+            Clear summaries of daily tasks, client progress, grant applications, and confirmed payments.
           </p>
         </div>
 
@@ -209,8 +212,8 @@ export default function OperationalReportsView() {
                       <td className="py-2.5 px-4 font-mono font-bold text-slate-900">{a.applicationNumber}</td>
                       <td className="py-2.5 px-4 font-semibold text-slate-800">{a.clientName}</td>
                       <td className="py-2.5 px-4 text-slate-700">{a.grantTitle}</td>
-                      <td className="py-2.5 px-4 font-bold text-amber-700 uppercase text-[10px]">{a.currentStage}</td>
-                      <td className="py-2.5 px-4 text-slate-600">{a.closingDate}</td>
+                      <td className="py-2.5 px-4 font-bold text-amber-700 uppercase text-[10px]">{a.status.replace(/_/g, ' ')}</td>
+                      <td className="py-2.5 px-4 text-slate-600">{a.funderDeadline || 'TBD'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -241,8 +244,8 @@ export default function OperationalReportsView() {
                 <span className="text-xl font-black text-purple-900 mt-1 block">GH₵ {finance.projectedSuccessFees.toLocaleString()}</span>
               </div>
               <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50">
-                <span className="text-[10px] uppercase font-bold text-indigo-700 block">Conversion Rate</span>
-                <span className="text-xl font-black text-indigo-900 mt-1 block">78.5%</span>
+                <span className="text-[10px] uppercase font-bold text-indigo-700 block">Submission Rate</span>
+                <span className="text-xl font-black text-indigo-900 mt-1 block">{submissionRate}%</span>
               </div>
             </div>
 
@@ -271,8 +274,8 @@ export default function OperationalReportsView() {
           </div>
 
           <div className="text-right">
-            <div className="font-bold text-slate-900">Kwame Boateng</div>
-            <div className="text-[11px] text-slate-500">Chief Executive Officer / Managing Director</div>
+            <div className="font-bold text-slate-900">Isaac Agya Koomson</div>
+            <div className="text-[11px] text-slate-500">Founder & Chief Executive Officer</div>
             <div className="text-[10px] text-emerald-600 font-bold mt-2">Approved for Executive Action</div>
           </div>
         </div>
