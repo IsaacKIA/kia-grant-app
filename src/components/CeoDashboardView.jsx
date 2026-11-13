@@ -147,7 +147,10 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient, onOpe
         </div>
 
         {/* Verified Fees */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+        <div
+          onClick={() => onNavigateTab('finance')}
+          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition cursor-pointer"
+        >
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Verified Fees</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -163,7 +166,10 @@ export default function CeoDashboardView({ onNavigateTab, onOpenNewClient, onOpe
         </div>
 
         {/* Inactive Cases */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+        <div
+          onClick={() => onNavigateTab('automation')}
+          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition cursor-pointer"
+        >
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Inactive Cases (&gt;7d)</span>
             <AlertTriangle className="w-4 h-4 text-rose-500" />
