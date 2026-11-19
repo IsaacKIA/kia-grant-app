@@ -47,8 +47,8 @@ async function runAllScenarios() {
   const { crmService } = await import('../services/crmService.js');
   const { authService } = await import('../services/authService.js');
 
-  // Authenticate as CEO first and provision test staff accounts
-  await authService.authenticateStaff('info@kiastartupconsult.com', 'Kiastartup2026');
+  // Set active user to Founder & CEO and provision test staff accounts
+  authService.setCurrentUser('staff-01');
   const teamLeader = await authService.addTeamMember({
     fullName: 'Abena Osei',
     email: 'teamlead@kiastartupconsult.com',
