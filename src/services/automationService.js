@@ -14,6 +14,7 @@ import { documentService } from './documentService';
 import { taskService } from './taskService';
 import { auditService } from './auditService';
 import { grantService } from './grantService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AUTOMATION_LOGS_STORAGE_KEY = 'kia_automation_logs_v2';
 
@@ -103,6 +104,7 @@ class AutomationService {
       inactivityCeoEscalations: [],
       deadlineAlerts: [],
       documentChaseAlerts: [],
+      expiringLinkAlerts: [],
       tasksCreatedCount: 0
     };
 
@@ -212,6 +214,21 @@ class AutomationService {
       }
     }
 
+    // 4. SCAN FOR EXPIRING CLIENT UPLOAD LINKS (< 24 HOURS REMAINING)
+    const activeTokens = documentService.getAllTokens().filter(t => !t.isRevoked);
+    for (const tok of activeTokens) {
+      const msLeft = new Date(tok.expiresAt).getTime() - now.getTime();
+      if (msLeft > 0 && msLeft <= 24 * 3600000) {
+        auditResults.expiringLinkAlerts.push({
+          caseId: tok.caseId,
+          clientName: tok.clientName,
+          token: tok.token,
+          expiresAt: tok.expiresAt,
+          hoursLeft: Math.max(1, Math.ceil(msLeft / 3600000))
+        });
+      }
+    }
+
     // Record audit run in logs
     const logEntry = {
       id: `audit-${Date.now()}`,
@@ -237,6 +254,93 @@ class AutomationService {
     });
 
     return auditResults;
+  }
+
+  /**
+   * Dispatches automated Email & WhatsApp nudges via the Supabase Edge Function
+   * `send-client-reminders` for missing documents and expiring upload links.
+   */
+  async dispatchClientReminders({ channels = ['email', 'whatsapp'] } = {}) {
+    const cases = crmService.getCases();
+    const tokens = documentService.getAllTokens().filter(t => !t.isRevoked && new Date(t.expiresAt) > new Date());
+    const now = new Date();
+    const reminders = [];
+
+    for (const c of cases) {
+      if (c.status === 'archived' || c.status === 'dormant') continue;
+      const progress = documentService.calculateCompleteness(c.id);
+      const caseToken = tokens.find(t => t.caseId === c.id);
+      const contact = c.primaryContact || {};
+
+      if (!contact.email && !contact.whatsapp && !contact.phone) continue;
+
+      if (caseToken && new Date(caseToken.expiresAt).getTime() - now.getTime() <= 24 * 3600000) {
+        reminders.push({
+          caseId: c.id,
+          clientName: c.tradingName || c.legalName,
+          contactName: contact.fullName,
+          email: contact.email,
+          whatsappPhone: contact.whatsapp || contact.phone,
+          reason: 'expiring_upload_link',
+          uploadUrl: caseToken.uploadUrl,
+          expiresAt: caseToken.expiresAt
+        });
+      } else if (progress.missing > 0) {
+        reminders.push({
+          caseId: c.id,
+          clientName: c.tradingName || c.legalName,
+          contactName: contact.fullName,
+          email: contact.email,
+          whatsappPhone: contact.whatsapp || contact.phone,
+          reason: 'missing_documents',
+          missingCount: progress.missing,
+          uploadUrl: caseToken?.uploadUrl
+        });
+      }
+    }
+
+    let edgeResult = null;
+    let mode = 'local_preview';
+
+    if (isSupabaseConfigured && supabase && reminders.length > 0) {
+      const { data, error } = await supabase.functions.invoke('send-client-reminders', {
+        body: { reminders, channels }
+      });
+      if (!error && data?.ok) {
+        edgeResult = data;
+        mode = 'supabase_edge_function';
+      } else {
+        mode = 'edge_function_pending_deploy';
+      }
+    }
+
+    const summary = {
+      dispatchedAt: now.toISOString(),
+      mode,
+      totalQueued: reminders.length,
+      sentEmailCount: edgeResult?.sentEmailCount || 0,
+      sentWhatsappCount: edgeResult?.sentWhatsappCount || 0,
+      reminders
+    };
+
+    const logEntry = {
+      id: `rem-${Date.now()}`,
+      runAt: summary.dispatchedAt,
+      summary: `Client reminder dispatch (${mode}): ${summary.totalQueued} client(s) queued (${summary.sentEmailCount} emails, ${summary.sentWhatsappCount} WhatsApp sent).`,
+      details: summary
+    };
+
+    this.saveLogs([logEntry, ...this.logs.slice(0, 49)]);
+
+    await auditService.logAction({
+      userId: 'system-automation',
+      action: 'dispatch_client_reminders',
+      entityType: 'automation_system',
+      entityId: logEntry.id,
+      details: { mode, totalQueued: summary.totalQueued }
+    });
+
+    return summary;
   }
 }
 

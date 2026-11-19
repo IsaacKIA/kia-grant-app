@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { 
   Zap, Clock, AlertTriangle, ShieldAlert, CheckCircle2, 
-  Play, RefreshCw, Calendar, ArrowRight, ShieldCheck, FileText 
+  Play, RefreshCw, Calendar, ArrowRight, ShieldCheck, FileText, Send 
 } from 'lucide-react';
 import { automationService, AUTOMATION_POLICIES } from '../services/automationService';
 
 export default function AutomationControlView({ onNavigateCase }) {
   const [logs, setLogs] = useState(() => automationService.getLogs());
   const [isRunning, setIsRunning] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [lastAuditResult, setLastAuditResult] = useState(null);
+  const [lastReminderSummary, setLastReminderSummary] = useState(null);
   const [selectedLogForDetails, setSelectedLogForDetails] = useState(null);
 
   const handleRunAudit = async () => {
@@ -21,6 +23,19 @@ export default function AutomationControlView({ onNavigateCase }) {
       alert(err.message);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const handleSendReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const summary = await automationService.dispatchClientReminders();
+      setLastReminderSummary(summary);
+      setLogs(automationService.getLogs());
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsSendingReminders(false);
     }
   };
 
@@ -41,7 +56,16 @@ export default function AutomationControlView({ onNavigateCase }) {
           </p>
         </div>
 
-        <div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleSendReminders}
+            disabled={isSendingReminders}
+            className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-sm transition-all disabled:opacity-50"
+          >
+            <Send className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isSendingReminders ? 'Sending Reminders...' : 'Send Client Reminders'}</span>
+          </button>
+
           <button
             onClick={handleRunAudit}
             disabled={isRunning}
@@ -61,6 +85,21 @@ export default function AutomationControlView({ onNavigateCase }) {
           </button>
         </div>
       </div>
+
+      {lastReminderSummary && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <strong className="font-bold">Client Reminder Dispatch Complete:</strong>{' '}
+            {lastReminderSummary.totalQueued} client(s) checked — {lastReminderSummary.sentEmailCount} email(s) and {lastReminderSummary.sentWhatsappCount} WhatsApp message(s) sent
+            {lastReminderSummary.mode !== 'supabase_edge_function' && (
+              <span className="text-emerald-700"> (deploy `send-client-reminders` Edge Function + provider keys to deliver live messages)</span>
+            )}.
+          </div>
+          <span className="font-mono text-[11px] text-emerald-700">
+            {new Date(lastReminderSummary.dispatchedAt).toLocaleTimeString()}
+          </span>
+        </div>
+      )}
 
       {/* Real-time Audit Trigger Results (if run) */}
       {lastAuditResult && (
