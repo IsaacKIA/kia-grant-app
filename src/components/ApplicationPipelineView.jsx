@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Search, Clock, CheckCircle2, 
+  Search, Clock, CheckCircle2, Plus,
   AlertTriangle, ShieldCheck, DollarSign, Send, Award, ArrowRight, Eye 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
