@@ -18,7 +18,7 @@ export const CASE_STATUS_CONFIG = {
   closed: { label: 'Closed', color: 'bg-slate-200 text-slate-600 border-slate-400' }
 };
 
-const LOCAL_CRM_CASES_KEY = 'kia_crm_cases_v2';
+const LOCAL_CRM_CASES_KEY = 'kia_crm_cases_v3';
 
 // Standard operational baseline seed cases mapped from initial clients, with explicit accountability
 function generateSeedCases() {
@@ -217,16 +217,15 @@ export const crmService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return this.computeCaseFlags(parsed);
         }
       } catch (e) {
         console.error('Failed to parse saved CRM cases:', e);
       }
     }
-    const seed = generateSeedCases();
-    localStorage.setItem(LOCAL_CRM_CASES_KEY, JSON.stringify(seed));
-    return this.computeCaseFlags(seed);
+    localStorage.setItem(LOCAL_CRM_CASES_KEY, JSON.stringify([]));
+    return [];
   },
 
   computeCaseFlags(caseList) {

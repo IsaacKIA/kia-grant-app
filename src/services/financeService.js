@@ -9,8 +9,8 @@
 import { auditService } from './auditService';
 import { authService } from './authService';
 
-const INVOICES_STORAGE_KEY = 'kia_finance_invoices_v2';
-const PAYMENTS_STORAGE_KEY = 'kia_finance_payments_v2';
+const INVOICES_STORAGE_KEY = 'kia_finance_invoices_v3';
+const PAYMENTS_STORAGE_KEY = 'kia_finance_payments_v3';
 
 // Standard Initial Engagement Fee
 export const DEFAULT_ENGAGEMENT_FEE = 200; // GH₵
@@ -205,8 +205,8 @@ class FinanceService {
     } catch (e) {
       console.error('Failed to load finance invoices:', e);
     }
-    this.saveInvoices(SEED_INVOICES);
-    return SEED_INVOICES;
+    this.saveInvoices([]);
+    return [];
   }
 
   saveInvoices(invoices) {
@@ -227,8 +227,8 @@ class FinanceService {
     } catch (e) {
       console.error('Failed to load finance payments:', e);
     }
-    this.savePayments(SEED_PAYMENTS);
-    return SEED_PAYMENTS;
+    this.savePayments([]);
+    return [];
   }
 
   savePayments(payments) {

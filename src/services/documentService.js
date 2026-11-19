@@ -2,8 +2,8 @@ import { auditService } from './auditService';
 import { taskService } from './taskService';
 import { authService } from './authService';
 
-const LOCAL_DOC_REQUIREMENTS_KEY = 'kia_case_doc_requirements_v2';
-const LOCAL_UPLOAD_TOKENS_KEY = 'kia_upload_tokens_v2';
+const LOCAL_DOC_REQUIREMENTS_KEY = 'kia_case_doc_requirements_v3';
+const LOCAL_UPLOAD_TOKENS_KEY = 'kia_upload_tokens_v3';
 
 // Standard Document Templates by Entity Type & Sector
 export const DOCUMENT_TEMPLATES = [
@@ -219,10 +219,9 @@ export const documentService = {
       } catch (e) {
         console.error('Failed to parse doc requirements:', e);
       }
-    }
-    if (!allReqs || allReqs.length === 0) {
-      allReqs = generateSeedRequirements();
-      localStorage.setItem(LOCAL_DOC_REQUIREMENTS_KEY, JSON.stringify(allReqs));
+    } else {
+      allReqs = [];
+      localStorage.setItem(LOCAL_DOC_REQUIREMENTS_KEY, JSON.stringify([]));
     }
 
     if (caseId) {

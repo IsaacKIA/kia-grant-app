@@ -4,7 +4,7 @@ import { authService, STAFF_USERS } from './authService';
 import { crmService } from './crmService';
 import { grantService } from './grantService';
 
-const LOCAL_APPLICATIONS_KEY = 'kia_grant_applications_v2';
+const LOCAL_APPLICATIONS_KEY = 'kia_grant_applications_v3';
 
 export const APPLICATION_STAGES = [
   { id: 'opportunity_selected', label: '1. Opportunity Selected', color: 'border-blue-500 bg-blue-50/50' },
@@ -110,14 +110,13 @@ export const applicationService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         console.error('Failed to parse saved applications:', e);
       }
     }
-    const seed = generateSeedApplications();
-    localStorage.setItem(LOCAL_APPLICATIONS_KEY, JSON.stringify(seed));
-    return seed;
+    localStorage.setItem(LOCAL_APPLICATIONS_KEY, JSON.stringify([]));
+    return [];
   },
 
   saveApplications(apps) {

@@ -1,7 +1,7 @@
 import { authService, STAFF_USERS } from './authService';
 import { auditService } from './auditService';
 
-const LOCAL_TASKS_KEY = 'kia_tasks_v2';
+const LOCAL_TASKS_KEY = 'kia_tasks_v3';
 
 export const INITIAL_TASKS = [
   {
@@ -102,16 +102,15 @@ export const taskService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return this.computeEscalations(parsed);
         }
       } catch (e) {
         console.error('Failed to parse saved tasks:', e);
       }
     }
-    const evaluated = this.computeEscalations(INITIAL_TASKS);
-    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(evaluated));
-    return evaluated;
+    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify([]));
+    return [];
   },
 
   computeEscalations(taskList) {
