@@ -1,7 +1,7 @@
 import { auditService } from './auditService';
 import { authService } from './authService';
 
-const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v6';
+const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v7';
 
 export const SEEDED_GRANTS = [
   // === November 2026 Grant Alert Additions (Ghana / Africa / Global Eligible & Verified Real) ===
@@ -156,36 +156,6 @@ export const SEEDED_GRANTS = [
     internalNotes: 'Open to African post-secondary students and recent graduates across all disciplines.'
   },
   {
-    id: 'grant-13',
-    opportunityCode: 'GRANT-TRANSFIERE-2026',
-    title: 'Open Call for Deep Tech Startup Program (Transfiere)',
-    fundingOrganization: 'Transfiere',
-    officialSourceUrl: 'https://transfiere.fycma.com',
-    description: 'Connects investment-seeking deep tech startups (registered <=5 years) with international investors and corporate partners.',
-    targetSectors: ['Technology & Services', 'Climate & Renewable Energy', 'Manufacturing'],
-    eligibleApplicantTypes: ['Startup'],
-    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 1000,
-    maxFundingAmount: 10000,
-    currency: 'USD',
-    minReadinessScore: 55,
-    requiresRegistration: true,
-    requiredLegalTypes: ['Limited Liability'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2026-12-02',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Transfiere Registration Form',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Commercializing scientific and technological innovations.',
-    internalNotes: 'Finalists pitch in person unless exceptional remote approval is granted.'
-  },
-  {
     id: 'grant-14',
     opportunityCode: 'GRANT-SCI-2026',
     title: 'SCI Sustainability & Innovation Award Programs',
@@ -306,126 +276,6 @@ export const SEEDED_GRANTS = [
     internalNotes: 'Virtual global program; requires >=2 full-time employees and TRL 4+ working prototype.'
   },
   {
-    id: 'grant-18',
-    opportunityCode: 'GRANT-WINWIN-2027',
-    title: 'WIN WIN Award Re:economy & Youth Award',
-    fundingOrganization: 'WIN WIN Award',
-    officialSourceUrl: 'https://www.winwinaward.org',
-    description: 'International prize of SEK 1M (~USD 91,000) + Youth Award (SEK 100,000) for businesses, NGOs, and changemakers building circular, nature-positive models.',
-    targetSectors: ['NGO / Social Enterprise', 'Climate & Renewable Energy', 'Financial Services & Fintech', 'General Commerce & Services'],
-    eligibleApplicantTypes: ['SME', 'Startup', 'NGO', 'Individual'],
-    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth', 'Established Scaling'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 10000,
-    maxFundingAmount: 100000,
-    currency: 'USD',
-    minReadinessScore: 50,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Limited Liability', 'Company Limited by Guarantee (NGO)', 'Sole Proprietorship'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-15',
-    closingDate: '2027-01-10',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'WIN WIN Online Nomination Form',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Sustainable business models, green finance, and living within planetary boundaries.',
-    internalNotes: 'Youth Award open to ages 13-29; main award open to individuals and organizations globally.'
-  },
-  {
-    id: 'grant-19',
-    opportunityCode: 'GRANT-LUMINATE-2027',
-    title: 'Luminate Optics and Photonics Startup Accelerator',
-    fundingOrganization: 'Luminate (NextCorps)',
-    officialSourceUrl: 'https://luminate.org',
-    description: 'Six-month accelerator investing $100K at start + up to $1M follow-on for incorporated optics, photonics, imaging, or laser startups.',
-    targetSectors: ['Technology & Services', 'Manufacturing', 'Healthcare & Sanitation'],
-    eligibleApplicantTypes: ['Startup'],
-    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 100000,
-    maxFundingAmount: 1000000,
-    currency: 'USD',
-    minReadinessScore: 65,
-    requiresRegistration: true,
-    requiredLegalTypes: ['Limited Liability'],
-    requiresBankStatements: true,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2027-01-11',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Luminate Accelerator Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Optics, photonics, imaging, and sensor hardware.',
-    internalNotes: 'Requires >=2 full-time team members and ability to travel to Rochester NY 1 week/month.'
-  },
-  {
-    id: 'grant-20',
-    opportunityCode: 'GRANT-DIAMOND-2027',
-    title: 'Diamond Challenge: Global Youth Entrepreneurship',
-    fundingOrganization: 'Horn Entrepreneurship (Diamond Challenge)',
-    officialSourceUrl: 'https://diamondchallenge.org',
-    description: 'Global entrepreneurship competition for high school innovators competing for a $100,000 prize pool across Business & Social Innovation tracks.',
-    targetSectors: ['Education & Training', 'NGO / Social Enterprise', 'Technology & Services'],
-    eligibleApplicantTypes: ['Individual', 'Startup'],
-    eligibleBusinessStages: ['Idea / Pre-revenue'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 4500,
-    maxFundingAmount: 12000,
-    currency: 'USD',
-    minReadinessScore: 35,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-09-01',
-    closingDate: '2027-01-14',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Diamond Challenge Online Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Youth business and social innovation concepts.',
-    internalNotes: 'Strictly for enrolled high school students worldwide.'
-  },
-  {
-    id: 'grant-21',
-    opportunityCode: 'GRANT-WOMENBIO-2027',
-    title: 'Women and Biosphere International Photo Competition',
-    fundingOrganization: 'Tuscan-Emilian Apennine National Park Authority',
-    officialSourceUrl: 'https://www.unesco.org',
-    description: 'EUR 5,000 international photography competition spotlighting women in sustainable agriculture, female-led businesses, and conservation.',
-    targetSectors: ['Creative Arts & Media', 'Tourism & Hospitality', 'Agribusiness'],
-    eligibleApplicantTypes: ['Individual', 'NGO'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage', 'Early-stage Growth'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 1000,
-    maxFundingAmount: 5500,
-    currency: 'USD',
-    minReadinessScore: 35,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Company Limited by Guarantee (NGO)'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2027-01-20',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Online Photo Submission',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Women in sustainable development, biodiversity, water, and tourism.',
-    internalNotes: 'Open to amateur and professional photographers worldwide.'
-  },
-  {
     id: 'grant-22',
     opportunityCode: 'GRANT-WEF-2027',
     title: 'World Economic Forum Technology Pioneers 2027',
@@ -454,36 +304,6 @@ export const SEEDED_GRANTS = [
     verifiedAt: '2026-11-20T15:00:00Z',
     donorFocus: 'Mission-driven frontier technologies with global impact.',
     internalNotes: 'Non-cash prestige & global investor/policy access program.'
-  },
-  {
-    id: 'grant-23',
-    opportunityCode: 'GRANT-NIEMAN-2027',
-    title: 'Nieman-Berkman Klein Fellowship in Journalism Innovation',
-    fundingOrganization: 'Harvard Nieman Foundation & Berkman Klein Center',
-    officialSourceUrl: 'https://nieman.harvard.edu',
-    description: 'Year-long Harvard fellowship for journalists and media innovators building new revenue models, reporting tools, or digital news ventures.',
-    targetSectors: ['Creative Arts & Media', 'Technology & Services'],
-    eligibleApplicantTypes: ['Individual', 'NGO', 'Startup'],
-    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth', 'Established Scaling'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 25000,
-    maxFundingAmount: 85000,
-    currency: 'USD',
-    minReadinessScore: 60,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Limited Liability'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2027-01-31',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Harvard Nieman Fellowship Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:00:00Z',
-    donorFocus: 'Digital transformation of journalism, media tech, and news sustainability.',
-    internalNotes: 'Open to international working journalists and media business/tech leaders.'
   },
   {
     id: 'grant-24',
@@ -704,72 +524,6 @@ export const SEEDED_GRANTS = [
     verifiedAt: '2026-11-20T15:30:00Z',
     donorFocus: 'Water quality, wastewater, clean water access, and climate-resilient WASH.',
     internalNotes: 'Annual recurring cycle (typically Sep-Nov).'
-  },
-  {
-    id: 'grant-31',
-    opportunityCode: 'GRANT-CEPS-CLIMATE-ANNUAL',
-    title: 'CEPS Climate Leadership Programme',
-    fundingOrganization: 'Centre for European Policy Studies',
-    officialSourceUrl: 'https://www.ceps.eu',
-    description: 'Fully funded training and Brussels policy fellowship for young climate entrepreneurs, advocates, and policy leaders aged 20-30 worldwide.',
-    targetSectors: ['Climate & Renewable Energy', 'NGO / Social Enterprise', 'Education & Training'],
-    eligibleApplicantTypes: ['Individual', 'NGO', 'Startup'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 2000,
-    maxFundingAmount: 10000,
-    currency: 'USD',
-    minReadinessScore: 45,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered', 'Company Limited by Guarantee (NGO)', 'Limited Liability'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2027-09-01',
-    closingDate: '2027-11-11',
-    isAnnualRecurring: true,
-    typicalOpenMonth: 9,
-    typicalCloseMonth: 11,
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'CEPS Online Application',
-    hasApplicationFee: false,
-    status: 'upcoming',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:30:00Z',
-    donorFocus: 'Youth climate action, green entrepreneurship, and policy leadership.',
-    internalNotes: 'Annual recurring cycle (typically Sep-Nov); covers travel, visa, and accommodation.'
-  },
-  {
-    id: 'grant-32',
-    opportunityCode: 'GRANT-BLUEOCEAN-2027',
-    title: 'Blue Ocean Student Entrepreneur Competition',
-    fundingOrganization: 'Blue Ocean Student Entrepreneur Competition',
-    officialSourceUrl: 'https://blueoceancompetition.org',
-    description: 'Global virtual pitch competition for high school entrepreneurs worldwide (ages 14-18) with regional Africa winner prizes.',
-    targetSectors: ['Education & Training', 'Technology & Services', 'General Commerce & Services'],
-    eligibleApplicantTypes: ['Individual'],
-    eligibleBusinessStages: ['Idea / Pre-revenue'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 500,
-    maxFundingAmount: 1000,
-    currency: 'USD',
-    minReadinessScore: 30,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-09-01',
-    closingDate: '2027-02-21',
-    isAnnualRecurring: true,
-    typicalOpenMonth: 9,
-    typicalCloseMonth: 2,
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Blue Ocean Pitch Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T15:30:00Z',
-    donorFocus: 'Student entrepreneurship and blue-ocean business strategy.',
-    internalNotes: 'Annual recurring cycle; current 2027 cycle closes Feb 21, 2027.'
   },
   // === Bilateral, Multilateral, AI/Tech, Peacebuilding & CSR Grant Alert Additions (Nov 2026) ===
   {
@@ -1199,135 +953,6 @@ export const SEEDED_GRANTS = [
     internalNotes: 'Annual recurring cycle; current cycle closes Jan 24, 2027.'
   },
   {
-    id: 'grant-47',
-    opportunityCode: 'GRANT-HOLOHIL-2027',
-    title: 'Holohil Grant Program for Conservation Research',
-    fundingOrganization: 'Holohil Systems Ltd.',
-    officialSourceUrl: 'https://www.holohil.com/grant-program/',
-    description: 'Quarterly in-kind equipment grants (up to CAD 2,500 in wildlife radio transmitters) for conservation scientists and community researchers worldwide studying threatened species.',
-    targetSectors: ['Climate & Renewable Energy', 'NGO / Social Enterprise', 'Education & Training'],
-    eligibleApplicantTypes: ['Individual', 'NGO / Non-profit'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage', 'Early-stage Growth'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 500,
-    maxFundingAmount: 2500,
-    currency: 'CAD',
-    minReadinessScore: 35,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered', 'NGO / Non-profit'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-15',
-    closingDate: '2027-01-15',
-    isAnnualRecurring: true,
-    typicalOpenMonth: 10,
-    typicalCloseMonth: 1,
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Holohil Online Grant Application',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T18:00:00Z',
-    donorFocus: 'Wildlife conservation, biodiversity monitoring, and ecological field research.',
-    internalNotes: 'Quarterly recurring deadlines (Jan 15, Apr 15, Jul 15, Oct 15); next deadline Jan 15, 2027.'
-  },
-  {
-    id: 'grant-48',
-    opportunityCode: 'GRANT-IFDESIGN-2027',
-    title: 'iF Design Student Award 2027',
-    fundingOrganization: 'iF Design',
-    officialSourceUrl: 'https://ifdesign.com/en/if-design-student-award',
-    description: 'Global design competition with a EUR 50,000 prize fund rewarding students and recent graduates worldwide creating innovative product, service, and social impact designs aligned with UN SDGs.',
-    targetSectors: ['Creative Arts & Media', 'Manufacturing', 'Technology & Services', 'Fashion & Textiles'],
-    eligibleApplicantTypes: ['Individual'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 2000,
-    maxFundingAmount: 50000,
-    currency: 'EUR',
-    minReadinessScore: 30,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2027-02-03',
-    isAnnualRecurring: true,
-    typicalOpenMonth: 10,
-    typicalCloseMonth: 2,
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'iF Design Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T18:00:00Z',
-    donorFocus: 'UN SDG-aligned industrial design, sustainable packaging, assistive tech, and social innovation by students/recent grads.',
-    internalNotes: 'Annual recurring cycle; free to enter for students and recent graduates worldwide.'
-  },
-  {
-    id: 'grant-49',
-    opportunityCode: 'GRANT-SOPRASTERIA-2026',
-    title: 'Sopra Steria International Student Challenge',
-    fundingOrganization: 'Sopra Steria',
-    officialSourceUrl: 'https://www.soprasteria.com',
-    description: 'International student innovation challenge awarding up to EUR 10,000 to student teams plus a matching EUR 10,000 CSR award to a partner NGO.',
-    targetSectors: ['Technology & Services', 'Education & Training', 'NGO / Social Enterprise'],
-    eligibleApplicantTypes: ['Individual', 'NGO / Non-profit'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 2500,
-    maxFundingAmount: 10000,
-    currency: 'EUR',
-    minReadinessScore: 35,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered', 'NGO / Non-profit'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2026-12-06',
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'Sopra Steria Challenge Portal',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T18:00:00Z',
-    donorFocus: 'Tech-for-good student projects paired with CSR NGO social impact.',
-    internalNotes: 'Open to university students worldwide; winning solution also triggers EUR 10k CSR grant to an NGO.'
-  },
-  {
-    id: 'grant-50',
-    opportunityCode: 'GRANT-CEWE-YT-2027',
-    title: 'CEWE Photo Award - Young Talent Award',
-    fundingOrganization: 'CEWE',
-    officialSourceUrl: 'https://contest.cewe.de/cewephotoaward-2027',
-    description: 'Global photography competition with a dedicated Young Talent Award for creators aged 16–25 worldwide, offering camera equipment and travel prizes.',
-    targetSectors: ['Creative Arts & Media', 'Tourism & Hospitality'],
-    eligibleApplicantTypes: ['Individual'],
-    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
-    eligibleRegions: ['All 16 Regions of Ghana'],
-    minFundingAmount: 1000,
-    maxFundingAmount: 5000,
-    currency: 'EUR',
-    minReadinessScore: 25,
-    requiresRegistration: false,
-    requiredLegalTypes: ['Unregistered'],
-    requiresBankStatements: false,
-    requiresTaxClearance: false,
-    openingDate: '2026-10-01',
-    closingDate: '2027-05-31',
-    isAnnualRecurring: true,
-    typicalOpenMonth: 10,
-    typicalCloseMonth: 5,
-    deadlineTimezone: 'Africa/Accra',
-    applicationMethod: 'CEWE Photo Award Online Upload',
-    hasApplicationFee: false,
-    status: 'verified_open',
-    verifiedBy: 'staff-01',
-    verifiedAt: '2026-11-20T18:00:00Z',
-    donorFocus: 'Youth visual storytelling, culture, nature, and social documentary photography (ages 16-25).',
-    internalNotes: 'Free entry; open to young photographers aged 16-25 globally.'
-  },
-  {
     id: 'grant-51',
     opportunityCode: 'GRANT-HILTON-PRIZE-2027',
     title: 'Conrad N. Hilton Humanitarian Prize 2027',
@@ -1413,6 +1038,34 @@ function syncRecurringGrantCycles(grants) {
   return updated;
 }
 
+function normalizeGrantKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function deduplicateGrants(grants) {
+  const seenTitleOrg = new Set();
+  const seenCodes = new Set();
+  const unique = [];
+
+  for (const grant of grants) {
+    const titleOrgKey = `${normalizeGrantKey(grant.title)}::${normalizeGrantKey(grant.fundingOrganization)}`;
+    const codeKey = normalizeGrantKey(grant.opportunityCode);
+
+    if (seenTitleOrg.has(titleOrgKey) || (codeKey && seenCodes.has(codeKey))) {
+      continue;
+    }
+
+    seenTitleOrg.add(titleOrgKey);
+    if (codeKey) seenCodes.add(codeKey);
+    unique.push(grant);
+  }
+
+  return unique;
+}
+
 export const grantService = {
   getGrants() {
     const saved = localStorage.getItem(LOCAL_GRANTS_KEY);
@@ -1420,20 +1073,21 @@ export const grantService = {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return syncRecurringGrantCycles(parsed);
+          return syncRecurringGrantCycles(deduplicateGrants(parsed));
         }
       } catch (e) {
         console.error('Failed to parse saved grants:', e);
       }
     }
-    const synced = syncRecurringGrantCycles(SEEDED_GRANTS);
+    const synced = syncRecurringGrantCycles(deduplicateGrants(SEEDED_GRANTS));
     localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(synced));
     return synced;
   },
 
   saveGrants(list) {
-    localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(list));
-    return list;
+    const deduplicated = deduplicateGrants(list);
+    localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(deduplicated));
+    return deduplicated;
   },
 
   getGrantById(grantId) {
@@ -1478,6 +1132,17 @@ export const grantService = {
     const currentStaff = authService.getCurrentUser();
     const grants = this.getGrants();
 
+    const incomingTitleOrg = `${normalizeGrantKey(data.title)}::${normalizeGrantKey(data.fundingOrganization)}`;
+    const incomingCode = normalizeGrantKey(data.opportunityCode);
+    const duplicate = grants.find(
+      g =>
+        `${normalizeGrantKey(g.title)}::${normalizeGrantKey(g.fundingOrganization)}` === incomingTitleOrg ||
+        (incomingCode && normalizeGrantKey(g.opportunityCode) === incomingCode)
+    );
+    if (duplicate) {
+      throw new Error(`Duplicate grant opportunity: "${duplicate.title}" (${duplicate.fundingOrganization}) already exists.`);
+    }
+
     const newGrant = {
       id: `grant-${Date.now().toString().slice(-5)}`,
       opportunityCode: `GRANT-${Date.now().toString().slice(-4)}`,
@@ -1488,6 +1153,7 @@ export const grantService = {
       minReadinessScore: 50,
       hasApplicationFee: false,
       deadlineTimezone: 'Africa/Accra',
+      eligibleRegions: ['All 16 Regions of Ghana'],
       ...data,
       createdAt: new Date().toISOString()
     };
