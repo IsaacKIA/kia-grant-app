@@ -1,6 +1,31 @@
 import { auditService } from './auditService';
 import { taskService } from './taskService';
 import { authService } from './authService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val) {
+  return typeof val === 'string' && UUID_REGEX.test(val);
+}
+
+function mapSupabaseReqRow(row) {
+  return {
+    id: row.id,
+    caseId: row.case_id,
+    clientName: row.client_name,
+    templateCode: row.template_code,
+    documentName: row.document_name,
+    category: row.category,
+    isMandatory: row.is_mandatory !== false,
+    status: row.status || 'missing',
+    uploadedFile: row.uploaded_file || null,
+    verifiedBy: row.verified_by || null,
+    verifiedByName: row.verified_by_name || null,
+    verifiedAt: row.verified_at || null,
+    rejectionReason: row.rejection_reason || '',
+    notes: row.notes || ''
+  };
+}
 
 const LOCAL_DOC_REQUIREMENTS_KEY = 'kia_case_doc_requirements_v3';
 const LOCAL_UPLOAD_TOKENS_KEY = 'kia_upload_tokens_v3';
@@ -235,6 +260,43 @@ export const documentService = {
     return reqs;
   },
 
+  async syncDocumentsFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getCaseRequirements();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getCaseRequirements();
+
+      const [{ data: reqRows }, { data: tokenRows }] = await Promise.all([
+        supabase.from('case_doc_requirements').select('*').order('created_at', { ascending: false }),
+        supabase.from('client_upload_tokens').select('*').order('created_at', { ascending: false })
+      ]);
+
+      if (Array.isArray(reqRows)) {
+        this.saveCaseRequirements(reqRows.map(mapSupabaseReqRow));
+      }
+      if (Array.isArray(tokenRows)) {
+        const mappedTokens = tokenRows.map(t => ({
+          token: t.token,
+          caseId: t.case_id,
+          clientName: t.client_name,
+          issuedBy: t.issued_by,
+          issuedByName: t.issued_by_name,
+          createdAt: t.created_at,
+          expiresAt: t.expires_at,
+          isRevoked: Boolean(t.is_revoked),
+          revokedAt: t.revoked_at || null,
+          revocationReason: t.revocation_reason || '',
+          uploadUrl: t.upload_url
+        }));
+        localStorage.setItem(LOCAL_UPLOAD_TOKENS_KEY, JSON.stringify(mappedTokens));
+      }
+      return this.getCaseRequirements();
+    } catch (e) {
+      console.warn('Supabase documents sync skipped:', e);
+      return this.getCaseRequirements();
+    }
+  },
+
   // Generates automatic checklist for a case based on applicant type
   generateChecklistForCase(caseId, clientName, applicantType = 'SME') {
     const existing = this.getCaseRequirements(caseId);
@@ -245,7 +307,9 @@ export const documentService = {
     );
 
     const newReqs = applicableTemplates.map(tmpl => ({
-      id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: typeof globalThis.crypto?.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `req-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       caseId,
       clientName,
       templateCode: tmpl.code,
@@ -263,6 +327,27 @@ export const documentService = {
     const allReqs = this.getCaseRequirements();
     const updated = [...newReqs, ...allReqs];
     this.saveCaseRequirements(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        const rows = newReqs.map(r => ({
+          id: isUuid(r.id) ? r.id : undefined,
+          case_id: caseId,
+          client_name: clientName,
+          template_code: r.templateCode,
+          document_name: r.documentName,
+          category: r.category,
+          is_mandatory: r.isMandatory,
+          status: 'missing',
+          notes: r.notes
+        }));
+        supabase.from('case_doc_requirements').insert(rows).then(({ error }) => {
+          if (error) console.warn('Supabase checklist insert warning:', error.message);
+        });
+      });
+    }
+
     return newReqs;
   },
 
@@ -315,6 +400,24 @@ export const documentService = {
     const savedTokens = this.getAllTokens();
     localStorage.setItem(LOCAL_UPLOAD_TOKENS_KEY, JSON.stringify([tokenRecord, ...savedTokens]));
 
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase.from('client_upload_tokens').insert({
+          token: rawToken,
+          case_id: caseId,
+          client_name: clientName,
+          issued_by: isUuid(currentStaff?.id) ? currentStaff.id : null,
+          issued_by_name: currentStaff?.fullName || 'KIA Staff',
+          expires_at: expiresAt,
+          is_revoked: false,
+          upload_url: tokenRecord.uploadUrl
+        }).then(({ error }) => {
+          if (error) console.warn('Supabase upload token insert warning:', error.message);
+        });
+      });
+    }
+
     auditService.logEvent({
       entityType: 'upload_token',
       entityId: rawToken,
@@ -352,6 +455,39 @@ export const documentService = {
     return { valid: true, tokenRecord: found };
   },
 
+  async validateUploadTokenAsync(tokenString) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.rpc('get_client_portal_by_token', {
+          p_token: tokenString
+        });
+        if (!error && data) {
+          if (!data.valid) {
+            return { valid: false, error: data.error || 'Invalid or expired upload link.' };
+          }
+          const mappedReqs = Array.isArray(data.requirements)
+            ? data.requirements.map(mapSupabaseReqRow)
+            : [];
+          return {
+            valid: true,
+            source: 'supabase',
+            tokenRecord: data.tokenRecord,
+            requirements: mappedReqs
+          };
+        }
+      } catch (e) {
+        console.warn('Supabase portal token RPC fallback:', e);
+      }
+    }
+    const localVal = this.validateUploadToken(tokenString);
+    if (!localVal.valid) return localVal;
+    return {
+      ...localVal,
+      source: 'local',
+      requirements: this.getCaseRequirements(localVal.tokenRecord.caseId)
+    };
+  },
+
   revokeToken(tokenString, reason = 'Manually revoked by staff') {
     const tokens = this.getAllTokens();
     const updated = tokens.map(t => {
@@ -361,10 +497,84 @@ export const documentService = {
       return t;
     });
     localStorage.setItem(LOCAL_UPLOAD_TOKENS_KEY, JSON.stringify(updated));
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('client_upload_tokens')
+        .update({ is_revoked: true, revoked_at: new Date().toISOString(), revocation_reason: reason })
+        .eq('token', tokenString)
+        .then(() => {});
+    }
+  },
+
+  async getSignedDownloadUrl(storagePath) {
+    if (!storagePath || !isSupabaseConfigured || !supabase) return null;
+    const { data, error } = await supabase.storage
+      .from('client-documents')
+      .createSignedUrl(storagePath, 3600);
+    if (error) throw new Error(error.message);
+    return data?.signedUrl || null;
   },
 
   // Client uploads file against a requirement
-  async uploadClientFile(requirementId, { fileName, fileSize, mimeType, clientNote = '' }, tokenString = null) {
+  async uploadClientFile(requirementId, { file = null, fileName, fileSize, mimeType, clientNote = '' }, tokenString = null) {
+    let storagePath = null;
+
+    if (isSupabaseConfigured && supabase && tokenString && isUuid(requirementId)) {
+      let targetCaseId = null;
+      const portalCheck = await this.validateUploadTokenAsync(tokenString);
+      if (!portalCheck.valid) {
+        throw new Error(portalCheck.error || 'Invalid upload token.');
+      }
+      const matchedReq = (portalCheck.requirements || []).find(r => r.id === requirementId);
+      if (!matchedReq) {
+        throw new Error('ACCESS DENIED: Upload token does not match this requirement.');
+      }
+      targetCaseId = matchedReq.caseId;
+
+      if (file) {
+        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        storagePath = `${targetCaseId}/${requirementId}/${Date.now()}_${safeName}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('client-documents')
+          .upload(storagePath, file, { contentType: mimeType || 'application/octet-stream', upsert: true });
+        if (uploadErr) {
+          throw new Error(`File upload failed: ${uploadErr.message}`);
+        }
+      }
+
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('record_client_document_upload', {
+        p_token: tokenString,
+        p_requirement_id: requirementId,
+        p_file_name: fileName,
+        p_file_size: fileSize,
+        p_mime_type: mimeType,
+        p_storage_path: storagePath || '',
+        p_client_note: clientNote || ''
+      });
+      if (rpcErr) {
+        throw new Error(rpcErr.message);
+      }
+
+      // Sync local cache if requirement exists locally
+      const allReqs = this.getCaseRequirements();
+      if (allReqs.some(r => r.id === requirementId)) {
+        const updatedLocal = allReqs.map(r =>
+          r.id === requirementId
+            ? {
+                ...r,
+                status: 'under_review',
+                uploadedFile: rpcData?.uploadedFile || { fileName, fileSize, mimeType, storagePath, clientNote, uploadedAt: new Date().toISOString() },
+                rejectionReason: '',
+                notes: clientNote ? `Client Note: ${clientNote}` : r.notes
+              }
+            : r
+        );
+        this.saveCaseRequirements(updatedLocal);
+      }
+
+      return { id: requirementId, status: 'under_review', uploadedFile: rpcData?.uploadedFile };
+    }
+
     const allReqs = this.getCaseRequirements();
     const req = allReqs.find(r => r.id === requirementId);
     if (!req) throw new Error('Requirement not found');
@@ -384,6 +594,7 @@ export const documentService = {
       fileName,
       fileSize,
       mimeType,
+      storagePath,
       clientNote,
       uploadedAt: new Date().toISOString(),
       uploadedByType: 'client_link',
@@ -450,6 +661,23 @@ export const documentService = {
 
     this.saveCaseRequirements(updated);
 
+    if (isSupabaseConfigured && supabase && isUuid(requirementId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('case_doc_requirements')
+          .update({
+            status: 'verified',
+            verified_by: isUuid(currentStaff?.id) ? currentStaff.id : null,
+            verified_by_name: currentStaff?.fullName || null,
+            verified_at: new Date().toISOString(),
+            rejection_reason: '',
+            notes: notes || 'Verified as compliant by staff.'
+          })
+          .eq('id', requirementId);
+      }
+    }
+
     await auditService.logEvent({
       entityType: 'document',
       entityId: req.id,
@@ -489,6 +717,21 @@ export const documentService = {
     });
 
     this.saveCaseRequirements(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(requirementId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('case_doc_requirements')
+          .update({
+            status: 'correction_required',
+            verified_by: null,
+            verified_at: null,
+            rejection_reason: rejectionReason.trim()
+          })
+          .eq('id', requirementId);
+      }
+    }
 
     // Create follow-up task
     await taskService.createTask({

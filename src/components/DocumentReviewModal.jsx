@@ -78,14 +78,27 @@ export default function DocumentReviewModal({ requirement, onClose, onReviewed }
               </div>
             </div>
 
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); alert('In production, this streams the decrypted file securely from Supabase private storage via short-lived signed URL.'); }}
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (file.storagePath) {
+                    const signedUrl = await documentService.getSignedDownloadUrl(file.storagePath);
+                    if (signedUrl) {
+                      window.open(signedUrl, '_blank', 'noopener,noreferrer');
+                      return;
+                    }
+                  }
+                  alert('This file was recorded in local offline mode and does not have a cloud file attached.');
+                } catch (err) {
+                  alert(`Could not open file: ${err.message}`);
+                }
+              }}
               className="p-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg shadow-xs hover:bg-slate-50 transition"
-              title="Download File"
+              title="Download / Open File"
             >
               <Download className="w-4 h-4" />
-            </a>
+            </button>
           </div>
 
           {/* Audit Verification Guidelines */}

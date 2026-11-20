@@ -19,15 +19,20 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
       setTokenStatus({ valid: false, checking: false, error: 'No upload token provided in URL.' });
       return;
     }
-    const val = documentService.validateUploadToken(token);
-    if (val.valid) {
-      setTokenStatus({ valid: true, checking: false, tokenRecord: val.tokenRecord });
-      const reqs = documentService.getCaseRequirements(val.tokenRecord.caseId);
-      setRequirements(reqs);
-      if (reqs.length > 0) setActiveReqId(reqs[0].id);
-    } else {
-      setTokenStatus({ valid: false, checking: false, error: val.error });
-    }
+    let cancelled = false;
+    (async () => {
+      const val = await documentService.validateUploadTokenAsync(token);
+      if (cancelled) return;
+      if (val.valid) {
+        setTokenStatus({ valid: true, checking: false, tokenRecord: val.tokenRecord });
+        const reqs = val.requirements || [];
+        setRequirements(reqs);
+        if (reqs.length > 0) setActiveReqId(reqs[0].id);
+      } else {
+        setTokenStatus({ valid: false, checking: false, error: val.error });
+      }
+    })();
+    return () => { cancelled = true; };
   }, [token]);
 
   const handleFileChange = (e) => {
@@ -56,6 +61,7 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
     setIsSubmitting(true);
     try {
       await documentService.uploadClientFile(activeReqId, {
+        file: selectedFile,
         fileName: selectedFile.name,
         fileSize: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
         mimeType: selectedFile.type || 'application/octet-stream',
@@ -63,8 +69,8 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
       }, token);
 
       // Refresh list
-      const refreshed = documentService.getCaseRequirements(tokenStatus.tokenRecord.caseId);
-      setRequirements(refreshed);
+      const refreshedVal = await documentService.validateUploadTokenAsync(token);
+      setRequirements(refreshedVal.valid ? (refreshedVal.requirements || []) : []);
       setSelectedFile(null);
       setClientNote('');
       setIsSubmitting(false);

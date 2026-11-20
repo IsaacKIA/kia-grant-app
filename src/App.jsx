@@ -101,7 +101,10 @@ export default function App() {
     sessionStorage.setItem('kia_auth_user_id', updated.id);
     setAuthScreen('app');
     setStaffUsers(authService.getAllStaffUsers());
-    await crmService.syncCasesFromSupabase();
+    await Promise.all([
+      crmService.syncCasesFromSupabase(),
+      documentService.syncDocumentsFromSupabase()
+    ]);
     setCases(crmService.getCases());
   };
 
@@ -110,7 +113,10 @@ export default function App() {
     let cancelled = false;
     (async () => {
       await authService.syncStaffFromSupabase();
-      await crmService.syncCasesFromSupabase();
+      await Promise.all([
+        crmService.syncCasesFromSupabase(),
+        documentService.syncDocumentsFromSupabase()
+      ]);
       if (!cancelled) {
         const refreshedUser = authService.getCurrentUser();
         if (refreshedUser) setCurrentUser(refreshedUser);
