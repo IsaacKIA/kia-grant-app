@@ -16,8 +16,12 @@ export const matchingService = {
       disqualifyingReasons.push(`Sector Mismatch: Grant targets [${grantRecord.targetSectors.join(', ')}], but client operates in "${caseRecord.sector}".`);
     }
 
-    // 2. Applicant Type Eligibility
-    const isApplicantTypeMatch = grantRecord.eligibleApplicantTypes.includes(caseRecord.applicantType);
+    // 2. Applicant Type Eligibility (normalize NGO aliases)
+    const normalizeType = t => (t === 'NGO / Non-profit' ? 'NGO' : t);
+    const clientType = normalizeType(caseRecord.applicantType);
+    const isApplicantTypeMatch = grantRecord.eligibleApplicantTypes
+      .map(normalizeType)
+      .includes(clientType);
     if (isApplicantTypeMatch) {
       satisfiedCriteria.push(`Applicant Type Match: Organization structure "${caseRecord.applicantType}" is eligible.`);
     } else {
