@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { 
   UploadCloud, FileText, CheckCircle2, AlertTriangle, ShieldCheck, 
-  Clock, Lock, Check, AlertCircle, ArrowLeft 
+  Clock, Lock, Check, AlertCircle, ArrowLeft, Target 
 } from 'lucide-react';
 import { documentService } from '../services/documentService';
+
+const STAGE_LABELS = {
+  opportunity_selected: 'Opportunity Selected',
+  eligibility_review: 'Eligibility Check',
+  information_collection: 'Collecting Information',
+  proposal_preparation: 'Writing Proposal',
+  budget_preparation: 'Preparing Budget',
+  internal_review: 'Internal Quality Review',
+  client_confirmation: 'Client Confirmation',
+  approved_for_submission: 'Ready to Submit',
+  submitted: 'Submitted to Funder',
+  under_funder_review: 'Under Funder Review',
+  decision_received: 'Decision Received',
+  awarded: 'Grant Awarded',
+  rejected: 'Not Funded'
+};
 
 export default function ClientUploadPortal({ token, onExitPortal }) {
   const [tokenStatus, setTokenStatus] = useState({ valid: false, checking: true });
   const [requirements, setRequirements] = useState([]);
+  const [caseSummary, setCaseSummary] = useState(null);
+  const [applications, setApplications] = useState([]);
   const [activeReqId, setActiveReqId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [clientNote, setClientNote] = useState('');
@@ -27,6 +45,8 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
         setTokenStatus({ valid: true, checking: false, tokenRecord: val.tokenRecord });
         const reqs = val.requirements || [];
         setRequirements(reqs);
+        setCaseSummary(val.caseSummary || null);
+        setApplications(val.applications || []);
         if (reqs.length > 0) setActiveReqId(reqs[0].id);
       } else {
         setTokenStatus({ valid: false, checking: false, error: val.error });
@@ -160,12 +180,58 @@ export default function ClientUploadPortal({ token, onExitPortal }) {
         {/* Welcome Card */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
           <h1 className="text-xl font-black text-slate-900 tracking-tight">
-            Document Request for {tokenStatus.tokenRecord?.clientName}
+            Client Portal — {tokenStatus.tokenRecord?.clientName}
           </h1>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Please upload the required supporting documents listed below. Files are encrypted and delivered directly to your assigned grant advisory team in Accra.
+            Upload your required documents, replace any files needing correction, and track your grant application progress below.
           </p>
         </div>
+
+        {/* Case & Grant Application Progress */}
+        {(caseSummary || applications.length > 0) && (
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center space-x-2">
+                <Target className="w-4 h-4 text-amber-600" />
+                <h2 className="text-sm font-bold text-slate-900">Your Case &amp; Grant Progress</h2>
+              </div>
+              {caseSummary?.caseNumber && (
+                <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded border border-slate-200">
+                  {caseSummary.caseNumber}
+                </span>
+              )}
+            </div>
+
+            {caseSummary?.nextActionDescription && (
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-950">
+                <strong className="font-bold">Current Next Step: </strong>
+                <span>{caseSummary.nextActionDescription}</span>
+                {caseSummary.nextActionDueDate && (
+                  <span className="ml-2 text-amber-700 font-semibold">(Target: {caseSummary.nextActionDueDate})</span>
+                )}
+              </div>
+            )}
+
+            {applications.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {applications.map(app => (
+                  <div key={app.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] text-slate-500">{app.applicationNumber}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-amber-300">
+                        {STAGE_LABELS[app.status] || app.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900">{app.grantTitle}</div>
+                    {app.funderDeadline && (
+                      <div className="text-[11px] text-slate-500">Funder Deadline: {app.funderDeadline}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Upload Success Alert */}
         {uploadSuccess && (

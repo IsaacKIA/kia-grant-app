@@ -467,7 +467,9 @@ export const documentService = {
             valid: true,
             source: 'supabase',
             tokenRecord: data.tokenRecord,
-            requirements: mappedReqs
+            requirements: mappedReqs,
+            caseSummary: data.caseSummary || null,
+            applications: Array.isArray(data.applications) ? data.applications : []
           };
         }
       } catch (e) {
@@ -476,10 +478,22 @@ export const documentService = {
     }
     const localVal = this.validateUploadToken(tokenString);
     if (!localVal.valid) return localVal;
+    const { crmService } = await import('./crmService');
+    const { applicationService } = await import('./applicationService');
+    const localCase = await crmService.getCaseById(localVal.tokenRecord.caseId);
+    const localApps = applicationService.getApplications().filter(a => a.caseId === localVal.tokenRecord.caseId);
     return {
       ...localVal,
       source: 'local',
-      requirements: this.getCaseRequirements(localVal.tokenRecord.caseId)
+      requirements: this.getCaseRequirements(localVal.tokenRecord.caseId),
+      caseSummary: localCase ? {
+        caseNumber: localCase.caseNumber,
+        status: localCase.status,
+        nextActionDescription: localCase.nextActionDescription,
+        nextActionDueDate: localCase.nextActionDueDate,
+        waitingReason: localCase.waitingReason
+      } : null,
+      applications: localApps
     };
   },
 
