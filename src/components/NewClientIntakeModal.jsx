@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Building2, User, FileText, CheckCircle2, DollarSign, UserCheck, AlertCircle } from 'lucide-react';
 import { crmService } from '../services/crmService';
+import { documentService } from '../services/documentService';
 import { STAFF_USERS } from '../services/authService';
 import { ECONOMIC_SECTORS } from '../data/sectors';
 
@@ -89,6 +90,13 @@ export default function NewClientIntakeModal({ isOpen, onClose, onClientRegister
         feePaymentMethod: formData.feePaymentMethod,
         feeTransactionRef: formData.clientClaimsPaid ? formData.feeTransactionRef : ''
       });
+
+      // Auto-generate dynamic document checklist for the new client
+      documentService.generateChecklistForCase(
+        createdCase.id,
+        createdCase.tradingName,
+        createdCase.applicantType
+      );
 
       setIsSubmitting(false);
       onClientRegistered(createdCase);

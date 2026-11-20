@@ -88,7 +88,7 @@ export const dashboardService = {
           title: `Inactive Case Stall: ${c.legalName}`,
           description: `No recorded activity for ${c.daysSinceActivity} days. Assigned to ${STAFF_USERS.find(s => s.id === c.currentOfficerId)?.fullName || 'Officer'}.`,
           actionLabel: 'Inspect Case',
-          linkTab: 'cases'
+          linkTab: 'crm_cases'
         })),
         ...overdueCases.filter(c => !inactiveCases.some(ic => ic.id === c.id)).map(c => ({
           type: 'next_action_overdue',
@@ -96,7 +96,7 @@ export const dashboardService = {
           title: `Overdue Case Milestone: ${c.legalName}`,
           description: `${c.nextActionDescription} — Due on ${c.nextActionDueDate}.`,
           actionLabel: 'Review Action',
-          linkTab: 'cases'
+          linkTab: 'crm_cases'
         }))
       ]
     };

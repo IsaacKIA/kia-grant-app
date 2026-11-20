@@ -137,7 +137,7 @@ export default function GlobalSearchModal({ isOpen, onClose, onSelectCase, onNav
                         key={a.id}
                         type="button"
                         onClick={() => {
-                          onNavigateTab('applications');
+                          onNavigateTab('pipeline');
                           onClose();
                         }}
                         className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition flex items-center justify-between"
