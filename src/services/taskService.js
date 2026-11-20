@@ -1,11 +1,6 @@
 import { authService, STAFF_USERS } from './authService';
 import { auditService } from './auditService';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(val) {
-  return typeof val === 'string' && UUID_REGEX.test(val);
-}
+import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 const LOCAL_TASKS_KEY = 'kia_tasks_v3';
 

@@ -3,12 +3,7 @@ import { taskService } from './taskService';
 import { authService, STAFF_USERS } from './authService';
 import { crmService } from './crmService';
 import { grantService } from './grantService';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(val) {
-  return typeof val === 'string' && UUID_REGEX.test(val);
-}
+import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 const LOCAL_APPLICATIONS_KEY = 'kia_grant_applications_v3';
 

@@ -1,11 +1,6 @@
 import { authService, STAFF_USERS } from './authService';
 import { auditService } from './auditService';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(val) {
-  return typeof val === 'string' && UUID_REGEX.test(val);
-}
+import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 export const CASE_STATUS_CONFIG = {
   intake: { label: 'Intake / New', color: 'bg-slate-100 text-slate-700 border-slate-300' },
