@@ -3,6 +3,12 @@ import { taskService } from './taskService';
 import { authService, STAFF_USERS } from './authService';
 import { crmService } from './crmService';
 import { grantService } from './grantService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val) {
+  return typeof val === 'string' && UUID_REGEX.test(val);
+}
 
 const LOCAL_APPLICATIONS_KEY = 'kia_grant_applications_v3';
 
@@ -124,6 +130,67 @@ export const applicationService = {
     return apps;
   },
 
+  async syncApplicationsFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getApplications();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getApplications();
+
+      const { data, error } = await supabase
+        .from('grant_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !Array.isArray(data)) return this.getApplications();
+
+      const cached = this.getApplications();
+      const mapped = data.map(row => {
+        const localMatch = cached.find(a => a.id === row.id || a.applicationNumber === row.application_number);
+        return {
+          id: row.id,
+          applicationNumber: row.application_number,
+          caseId: row.case_id,
+          clientName: row.client_name,
+          opportunityId: row.opportunity_id,
+          grantTitle: row.grant_title,
+          funder: row.funder || localMatch?.funder || '',
+          assignedOfficerId: row.assigned_officer_id || localMatch?.assignedOfficerId || null,
+          status: row.status || 'opportunity_selected',
+          targetFundingAmount: Number(row.target_funding_amount) || 0,
+          currency: localMatch?.currency || 'GHS',
+          funderDeadline: row.funder_deadline || '2026-12-31',
+          internalQaDeadline: localMatch?.internalQaDeadline || row.funder_deadline || '2026-12-15',
+          proposalSummary: localMatch?.proposalSummary || '',
+          budgetSummary: localMatch?.budgetSummary || '',
+          qaReview: row.qa_reviewed_at
+            ? {
+                decision: row.qa_status === 'approved' ? 'approved' : 'revisions_required',
+                feedbackNotes: row.qa_notes || '',
+                reviewedBy: row.qa_reviewed_by,
+                reviewedAt: row.qa_reviewed_at
+              }
+            : (localMatch?.qaReview || null),
+          submissionReferenceNumber: row.submission_reference_number || '',
+          submissionEvidenceUrl: row.submission_evidence_url || '',
+          submittedAt: row.submitted_at || null,
+          submittedBy: row.submitted_by || null,
+          outcomeStatus: row.status === 'awarded' || row.status === 'rejected' ? row.status : null,
+          awardedAmount: row.awarded_amount ? Number(row.awarded_amount) : null,
+          createdAt: row.created_at
+        };
+      });
+
+      return this.saveApplications(mapped);
+    } catch (e) {
+      console.warn('Supabase applications sync skipped:', e);
+      return this.getApplications();
+    }
+  },
+
+  async updateApplicationStage(applicationId, newStage, updates = {}) {
+    return this.updateStage(applicationId, newStage, updates);
+  },
+
   async adoptOpportunity({ caseId, clientName, opportunityId, targetFundingAmount }) {
     const currentStaff = authService.getCurrentUser();
     const grant = grantService.getGrantById(opportunityId);
@@ -131,9 +198,35 @@ export const applicationService = {
 
     const apps = this.getApplications();
     const appNumber = `APP-2026-${String(apps.length + 1).padStart(4, '0')}`;
+    let appId = `app-${Date.now().toString().slice(-6)}`;
+    const resolvedTarget = Number(targetFundingAmount) || grant.minFundingAmount || 100000;
+    const resolvedDeadline = grant.closingDate || '2026-12-31';
+
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: row, error } = await supabase
+          .from('grant_applications')
+          .insert({
+            application_number: appNumber,
+            case_id: caseId,
+            client_name: clientName,
+            opportunity_id: opportunityId,
+            grant_title: grant.title,
+            funder: grant.fundingOrganization || '',
+            status: 'opportunity_selected',
+            assigned_officer_id: isUuid(currentStaff?.id) ? currentStaff.id : null,
+            target_funding_amount: resolvedTarget,
+            funder_deadline: resolvedDeadline
+          })
+          .select()
+          .single();
+        if (!error && row?.id) appId = row.id;
+      }
+    }
 
     const newApp = {
-      id: `app-${Date.now().toString().slice(-6)}`,
+      id: appId,
       applicationNumber: appNumber,
       caseId,
       clientName,
@@ -141,9 +234,9 @@ export const applicationService = {
       grantTitle: grant.title,
       assignedOfficerId: currentStaff.id,
       status: 'opportunity_selected',
-      targetFundingAmount: Number(targetFundingAmount) || grant.minFundingAmount || 100000,
+      targetFundingAmount: resolvedTarget,
       currency: grant.currency || 'GHS',
-      funderDeadline: grant.closingDate || '2026-12-31',
+      funderDeadline: resolvedDeadline,
       internalQaDeadline: new Date(new Date(grant.closingDate || '2026-12-31').getTime() - 14 * 86400000).toISOString().split('T')[0],
       proposalSummary: '',
       budgetSummary: '',
@@ -213,6 +306,16 @@ export const applicationService = {
 
     this.saveApplications(updated);
 
+    if (isSupabaseConfigured && supabase && isUuid(applicationId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('grant_applications')
+          .update({ status: newStage, updated_at: new Date().toISOString() })
+          .eq('id', applicationId);
+      }
+    }
+
     await auditService.logEvent({
       entityType: 'application',
       entityId: applicationId,
@@ -258,6 +361,22 @@ export const applicationService = {
     });
 
     this.saveApplications(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(applicationId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('grant_applications')
+          .update({
+            status: nextStatus,
+            qa_status: decision === 'approved' ? 'approved' : 'revisions_required',
+            qa_reviewed_by: isUuid(currentStaff?.id) ? currentStaff.id : null,
+            qa_reviewed_at: qaReview.reviewedAt,
+            qa_notes: feedbackNotes || ''
+          })
+          .eq('id', applicationId);
+      }
+    }
 
     // If revisions required, create revision task for officer
     if (decision !== 'approved') {
@@ -310,6 +429,22 @@ export const applicationService = {
 
     this.saveApplications(updated);
 
+    if (isSupabaseConfigured && supabase && isUuid(applicationId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('grant_applications')
+          .update({
+            status: 'submitted',
+            submission_reference_number: submissionReferenceNumber.trim(),
+            submission_evidence_url: submissionEvidenceUrl || 'Evidence uploaded to private storage',
+            submitted_at: new Date().toISOString(),
+            submitted_by: isUuid(currentStaff?.id) ? currentStaff.id : null
+          })
+          .eq('id', applicationId);
+      }
+    }
+
     // Create monitoring task for funder announcements
     await taskService.createTask({
       caseId: target.caseId,
@@ -356,6 +491,20 @@ export const applicationService = {
     });
 
     this.saveApplications(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(applicationId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('grant_applications')
+          .update({
+            status: isAwarded ? 'awarded' : 'rejected',
+            awarded_amount: parsedAmount,
+            outcome_notes: notes || ''
+          })
+          .eq('id', applicationId);
+      }
+    }
 
     // If awarded, calculate 5% contractual success fee obligation and issue invoice
     if (isAwarded && parsedAmount > 0) {

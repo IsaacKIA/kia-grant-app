@@ -1,5 +1,11 @@
 import { authService, STAFF_USERS } from './authService';
 import { auditService } from './auditService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val) {
+  return typeof val === 'string' && UUID_REGEX.test(val);
+}
 
 const LOCAL_TASKS_KEY = 'kia_tasks_v3';
 
@@ -148,6 +154,52 @@ export const taskService = {
     return evaluated;
   },
 
+  async syncTasksFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getTasks();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getTasks();
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*, cases(organizations(trading_name, legal_name))')
+        .order('created_at', { ascending: false });
+
+      if (error || !Array.isArray(data)) return this.getTasks();
+
+      const cached = this.getTasks();
+      const mapped = data.map(row => {
+        const localMatch = cached.find(t => t.id === row.id || t.taskNumber === row.task_number);
+        const org = row.cases?.organizations;
+        const orgObj = Array.isArray(org) ? org[0] : org;
+        return {
+          id: row.id,
+          taskNumber: row.task_number,
+          caseId: row.case_id,
+          clientName: orgObj?.trading_name || orgObj?.legal_name || localMatch?.clientName || 'General / Internal',
+          title: row.title,
+          description: row.description || '',
+          assignedToId: row.assigned_to,
+          createdById: row.created_by,
+          priority: row.priority || 'medium',
+          status: row.status || 'pending',
+          dueDate: row.due_date,
+          escalationLevel: row.escalation_level || 0,
+          escalatedAt: row.escalated_at || null,
+          completionEvidence: row.completion_evidence || '',
+          completedAt: row.completed_at || null,
+          createdAt: row.created_at,
+          reassignments: localMatch?.reassignments || []
+        };
+      });
+
+      return this.saveTasks(mapped);
+    } catch (e) {
+      console.warn('Supabase tasks sync skipped:', e);
+      return this.getTasks();
+    }
+  },
+
   getTasksByCaseId(caseId) {
     const tasks = this.getTasks();
     return tasks.filter(t => t.caseId === caseId);
@@ -156,18 +208,45 @@ export const taskService = {
   async createTask({ caseId, clientName, title, description, assignedToId, priority = 'medium', dueDate }) {
     const currentStaff = authService.getCurrentUser();
     const tasks = this.getTasks();
+    const taskNumber = `TSK-2026-${String(tasks.length + 1).padStart(4, '0')}`;
+    let taskId = `tsk-${Date.now().toString().slice(-5)}`;
+    const resolvedAssignee = assignedToId || currentStaff.id;
+    const resolvedDue = dueDate || new Date().toISOString().split('T')[0];
+
+    if (isSupabaseConfigured && supabase && isUuid(resolvedAssignee) && isUuid(currentStaff?.id)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: row, error } = await supabase
+          .from('tasks')
+          .insert({
+            task_number: taskNumber,
+            case_id: isUuid(caseId) ? caseId : null,
+            title,
+            description: description || '',
+            assigned_to: resolvedAssignee,
+            created_by: currentStaff.id,
+            priority,
+            status: 'pending',
+            due_date: resolvedDue
+          })
+          .select()
+          .single();
+        if (!error && row?.id) taskId = row.id;
+      }
+    }
+
     const newTask = {
-      id: `tsk-${Date.now().toString().slice(-5)}`,
-      taskNumber: `TSK-2026-${String(tasks.length + 1).padStart(4, '0')}`,
+      id: taskId,
+      taskNumber,
       caseId: caseId || null,
       clientName: clientName || 'General / Internal',
       title,
       description: description || '',
-      assignedToId: assignedToId || currentStaff.id,
+      assignedToId: resolvedAssignee,
       createdById: currentStaff.id,
       priority,
       status: 'pending',
-      dueDate: dueDate || new Date().toISOString().split('T')[0],
+      dueDate: resolvedDue,
       escalationLevel: 0,
       escalatedAt: null,
       completionEvidence: '',
@@ -208,6 +287,20 @@ export const taskService = {
     });
 
     this.saveTasks(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(taskId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('tasks')
+          .update({
+            status: newStatus,
+            completion_evidence: newStatus === 'completed' ? completionEvidence : current.completionEvidence,
+            completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+          })
+          .eq('id', taskId);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'task',
@@ -254,6 +347,16 @@ export const taskService = {
     });
 
     this.saveTasks(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(taskId) && isUuid(newOfficerId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('tasks')
+          .update({ assigned_to: newOfficerId })
+          .eq('id', taskId);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'task',

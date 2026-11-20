@@ -8,6 +8,12 @@
 
 import { auditService } from './auditService';
 import { authService } from './authService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val) {
+  return typeof val === 'string' && UUID_REGEX.test(val);
+}
 
 const INVOICES_STORAGE_KEY = 'kia_finance_invoices_v3';
 const PAYMENTS_STORAGE_KEY = 'kia_finance_payments_v3';
@@ -240,6 +246,88 @@ class FinanceService {
     }
   }
 
+  async syncFinanceFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const [{ data: invRows }, { data: payRows }] = await Promise.all([
+        supabase.from('invoices').select('*, cases(organizations(legal_name, trading_name, applicant_type))').order('created_at', { ascending: false }),
+        supabase.from('payments').select('*, cases(organizations(legal_name, trading_name))').order('created_at', { ascending: false })
+      ]);
+
+      if (Array.isArray(invRows)) {
+        const mappedInvoices = invRows.map(row => {
+          const localMatch = this.invoices.find(i => i.id === row.id || i.invoiceNumber === row.invoice_number);
+          const org = row.cases?.organizations;
+          const orgObj = Array.isArray(org) ? org[0] : org;
+          return {
+            id: row.id,
+            invoiceNumber: row.invoice_number,
+            caseId: row.case_id,
+            clientName: orgObj?.trading_name || orgObj?.legal_name || localMatch?.clientName || 'Client',
+            applicantType: orgObj?.applicant_type || localMatch?.applicantType || 'SME',
+            invoiceType: row.invoice_type || 'engagement_fee',
+            currency: row.currency || 'GHS',
+            items: localMatch?.items || [{
+              description: row.invoice_type === 'success_fee' ? 'Contractual Grant Success Fee' : 'Grant Readiness & Onboarding Engagement Fee',
+              quantity: 1,
+              unitPrice: Number(row.amount_due),
+              amount: Number(row.amount_due)
+            }],
+            subtotal: Number(row.amount_due),
+            discount: 0,
+            totalAmount: Number(row.amount_due),
+            amountPaid: Number(row.amount_paid) || 0,
+            status: row.status || 'issued',
+            issuedDate: row.issued_date,
+            dueDate: row.due_date,
+            notes: localMatch?.notes || '',
+            paymentDetails: localMatch?.paymentDetails || {
+              momoNumber: '024 123 4567 (KIA START-UP CONSULT)',
+              bankName: 'GCB Bank - High Street Branch',
+              accountNumber: '1011122334455',
+              accountName: 'KIA-START UP CONSULT LTD'
+            },
+            createdBy: row.created_by,
+            createdAt: row.created_at
+          };
+        });
+        this.saveInvoices(mappedInvoices);
+      }
+
+      if (Array.isArray(payRows)) {
+        const mappedPayments = payRows.map(row => {
+          const localMatch = this.payments.find(p => p.id === row.id);
+          const org = row.cases?.organizations;
+          const orgObj = Array.isArray(org) ? org[0] : org;
+          return {
+            id: row.id,
+            receiptNumber: localMatch?.receiptNumber || `REC-${row.created_at?.slice(0, 4) || '2026'}-${row.id.slice(0, 4).toUpperCase()}`,
+            invoiceId: row.invoice_id,
+            caseId: row.case_id,
+            clientName: orgObj?.trading_name || orgObj?.legal_name || localMatch?.clientName || 'Client',
+            amount: Number(row.amount),
+            paymentMethod: row.payment_method,
+            transactionReference: row.transaction_reference,
+            paymentDate: row.payment_date,
+            proofDocumentUrl: row.receipt_document_url || '',
+            verificationStatus: row.status || 'pending_verification',
+            verifiedBy: row.verified_by || null,
+            verifiedAt: row.verified_at || null,
+            verificationNotes: row.verification_notes || '',
+            recordedBy: localMatch?.recordedBy || null,
+            createdAt: row.created_at
+          };
+        });
+        this.savePayments(mappedPayments);
+      }
+    } catch (e) {
+      console.warn('Supabase finance sync skipped:', e);
+    }
+  }
+
   getInvoices() {
     return [...this.invoices];
   }
@@ -323,9 +411,38 @@ class FinanceService {
     
     const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * (item.quantity || 1)), 0);
     const totalAmount = subtotal;
+    const resolvedDue = dueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    let invoiceId = `inv-${Date.now()}`;
+
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { crmService } = await import('./crmService');
+        const caseObj = await crmService.getCaseById(caseId);
+        if (caseObj?.organizationId && isUuid(caseObj.organizationId)) {
+          const { data: row, error } = await supabase
+            .from('invoices')
+            .insert({
+              invoice_number: invoiceNumber,
+              case_id: caseId,
+              organization_id: caseObj.organizationId,
+              invoice_type: invoiceType,
+              amount_due: totalAmount,
+              amount_paid: 0,
+              currency: 'GHS',
+              status: 'issued',
+              due_date: resolvedDue,
+              created_by: isUuid(currentUser?.id) ? currentUser.id : null
+            })
+            .select()
+            .single();
+          if (!error && row?.id) invoiceId = row.id;
+        }
+      }
+    }
 
     const newInvoice = {
-      id: `inv-${Date.now()}`,
+      id: invoiceId,
       invoiceNumber,
       caseId,
       clientName,
@@ -392,9 +509,35 @@ class FinanceService {
     // Auto-verify ONLY if recorded by Finance Officer or CEO
     const canAutoVerify = currentUser.role === 'finance_officer' || currentUser.role === 'ceo' || currentUser.role === 'admin';
     const initialStatus = canAutoVerify ? 'verified' : 'pending_verification';
+    let paymentId = `pay-${Date.now()}`;
+
+    if (isSupabaseConfigured && supabase && isUuid(invoiceId) && isUuid(caseId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: row, error } = await supabase
+          .from('payments')
+          .insert({
+            invoice_id: invoiceId,
+            case_id: caseId,
+            amount: Number(amount),
+            currency: 'GHS',
+            payment_method: paymentMethod || 'momo_mtn',
+            transaction_reference: transactionReference,
+            payer_name: clientName,
+            payment_date: paymentDate || new Date().toISOString().split('T')[0],
+            status: initialStatus,
+            verified_by: canAutoVerify && isUuid(currentUser?.id) ? currentUser.id : null,
+            verified_at: canAutoVerify ? new Date().toISOString() : null,
+            receipt_document_url: proofDocumentUrl || null
+          })
+          .select()
+          .single();
+        if (!error && row?.id) paymentId = row.id;
+      }
+    }
 
     const newPayment = {
-      id: `pay-${Date.now()}`,
+      id: paymentId,
       receiptNumber,
       invoiceId,
       caseId,
@@ -454,6 +597,21 @@ class FinanceService {
     payment.verificationNotes = verificationNotes || 'Reconciled with official financial statement.';
 
     this.savePayments([...this.payments]);
+
+    if (isSupabaseConfigured && supabase && isUuid(paymentId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('payments')
+          .update({
+            status: 'verified',
+            verified_by: isUuid(currentUser?.id) ? currentUser.id : null,
+            verified_at: payment.verifiedAt,
+            verification_notes: payment.verificationNotes
+          })
+          .eq('id', paymentId);
+      }
+    }
 
     // Recalculate invoice paid amount
     if (payment.invoiceId) {

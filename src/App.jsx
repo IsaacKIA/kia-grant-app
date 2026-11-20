@@ -27,6 +27,9 @@ import { authService } from './services/authService';
 import { crmService } from './services/crmService';
 import { dashboardService } from './services/dashboardService';
 import { documentService } from './services/documentService';
+import { taskService } from './services/taskService';
+import { applicationService } from './services/applicationService';
+import { financeService } from './services/financeService';
 import { INITIAL_CLIENTS } from './data/initialClients';
 
 export default function App() {
@@ -103,7 +106,10 @@ export default function App() {
     setStaffUsers(authService.getAllStaffUsers());
     await Promise.all([
       crmService.syncCasesFromSupabase(),
-      documentService.syncDocumentsFromSupabase()
+      documentService.syncDocumentsFromSupabase(),
+      taskService.syncTasksFromSupabase(),
+      applicationService.syncApplicationsFromSupabase(),
+      financeService.syncFinanceFromSupabase()
     ]);
     setCases(crmService.getCases());
   };
@@ -115,7 +121,10 @@ export default function App() {
       await authService.syncStaffFromSupabase();
       await Promise.all([
         crmService.syncCasesFromSupabase(),
-        documentService.syncDocumentsFromSupabase()
+        documentService.syncDocumentsFromSupabase(),
+        taskService.syncTasksFromSupabase(),
+        applicationService.syncApplicationsFromSupabase(),
+        financeService.syncFinanceFromSupabase()
       ]);
       if (!cancelled) {
         const refreshedUser = authService.getCurrentUser();
