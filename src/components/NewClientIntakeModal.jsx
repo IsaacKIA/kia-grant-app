@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Building2, User, FileText, CheckCircle2, DollarSign, UserCheck, AlertCircle } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { STAFF_USERS } from '../services/authService';
+import { ECONOMIC_SECTORS } from '../data/sectors';
 
 export default function NewClientIntakeModal({ isOpen, onClose, onClientRegistered }) {
   const [step, setStep] = useState(1);
@@ -202,12 +203,9 @@ export default function NewClientIntakeModal({ isOpen, onClose, onClientRegister
                     onChange={(e) => handleChange('sector', e.target.value)}
                     className="w-full border border-slate-300 rounded-lg p-2.5 bg-white font-medium"
                   >
-                    <option value="Agribusiness">Agribusiness & Agro-Processing</option>
-                    <option value="Technology & Services">Technology & Digital Services</option>
-                    <option value="Manufacturing">Manufacturing & Value Addition</option>
-                    <option value="Beauty & Personal Care">Beauty, Cosmetics & Wellness</option>
-                    <option value="Healthcare & Sanitation">Healthcare & Sanitation</option>
-                    <option value="General Commerce & Services">General Commerce & Services</option>
+                    {ECONOMIC_SECTORS.map(sec => (
+                      <option key={sec.value} value={sec.value}>{sec.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

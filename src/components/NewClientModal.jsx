@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, UserPlus, DollarSign } from 'lucide-react';
+import { ECONOMIC_SECTORS } from '../data/sectors';
 
 export default function NewClientModal({ isOpen, onClose, onAddClient }) {
   const [formData, setFormData] = useState({
@@ -131,11 +132,9 @@ export default function NewClientModal({ isOpen, onClose, onAddClient }) {
                 onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                 className="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
               >
-                <option value="Agribusiness">Agribusiness</option>
-                <option value="Technology & Services">Technology & Services</option>
-                <option value="Beauty & Personal Care">Beauty & Personal Care</option>
-                <option value="NGO / Social Enterprise">NGO / Social Enterprise</option>
-                <option value="General Commerce & Services">General Commerce & Services</option>
+                {ECONOMIC_SECTORS.map(sec => (
+                  <option key={sec.value} value={sec.value}>{sec.label}</option>
+                ))}
               </select>
             </div>
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { grantService } from '../services/grantService';
 import { authService } from '../services/authService';
+import { ECONOMIC_SECTORS } from '../data/sectors';
 
 export default function GrantCatalogueView({ onAdoptOpportunity }) {
   const [grants, setGrants] = useState(() => grantService.getGrants());
@@ -36,7 +37,7 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
     setGrants(grantService.getGrants());
   };
 
-  const sectors = ['All', 'Agribusiness', 'Technology & Services', 'Manufacturing', 'Beauty & Personal Care', 'Healthcare & Sanitation', 'General Commerce & Services'];
+  const sectors = ['All', ...ECONOMIC_SECTORS.map(s => s.value)];
 
   const filteredGrants = grants.filter(g => {
     const matchesSearch = 
@@ -377,7 +378,7 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
                     onChange={(e) => setNewSector(e.target.value)}
                     className="w-full border border-slate-300 rounded-lg p-2.5 bg-white font-medium"
                   >
-                    {sectors.filter(s => s !== 'All').map(s => <option key={s} value={s}>{s}</option>)}
+                    {ECONOMIC_SECTORS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
               </div>
