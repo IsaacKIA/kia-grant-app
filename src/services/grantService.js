@@ -1,5 +1,6 @@
 import { auditService } from './auditService';
 import { authService } from './authService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v9';
 
@@ -1250,6 +1251,78 @@ function deduplicateGrants(grants) {
   return unique;
 }
 
+function mapGrantToRow(g) {
+  return {
+    id: g.id,
+    opportunity_code: g.opportunityCode,
+    title: g.title,
+    funding_organization: g.fundingOrganization,
+    official_source_url: g.officialSourceUrl || '',
+    description: g.description || '',
+    target_sectors: g.targetSectors || [],
+    eligible_applicant_types: g.eligibleApplicantTypes || [],
+    eligible_business_stages: g.eligibleBusinessStages || [],
+    eligible_regions: g.eligibleRegions || ['All 16 Regions of Ghana'],
+    min_funding_amount: Number(g.minFundingAmount) || 0,
+    max_funding_amount: Number(g.maxFundingAmount) || 0,
+    currency: g.currency || 'USD',
+    min_readiness_score: Number(g.minReadinessScore) || 50,
+    requires_registration: Boolean(g.requiresRegistration),
+    required_legal_types: g.requiredLegalTypes || [],
+    requires_bank_statements: Boolean(g.requiresBankStatements),
+    requires_tax_clearance: Boolean(g.requiresTaxClearance),
+    opening_date: g.openingDate || null,
+    closing_date: g.closingDate || null,
+    is_annual_recurring: Boolean(g.isAnnualRecurring),
+    typical_open_month: g.typicalOpenMonth || null,
+    typical_close_month: g.typicalCloseMonth || null,
+    deadline_timezone: g.deadlineTimezone || 'Africa/Accra',
+    application_method: g.applicationMethod || '',
+    has_application_fee: Boolean(g.hasApplicationFee),
+    status: g.status || 'pending_verification',
+    verified_by: g.verifiedBy || null,
+    verified_at: g.verifiedAt || null,
+    donor_focus: g.donorFocus || '',
+    internal_notes: g.internalNotes || ''
+  };
+}
+
+function mapRowToGrant(row) {
+  return {
+    id: row.id,
+    opportunityCode: row.opportunity_code,
+    title: row.title,
+    fundingOrganization: row.funding_organization,
+    officialSourceUrl: row.official_source_url || '',
+    description: row.description || '',
+    targetSectors: row.target_sectors || [],
+    eligibleApplicantTypes: row.eligible_applicant_types || [],
+    eligibleBusinessStages: row.eligible_business_stages || [],
+    eligibleRegions: row.eligible_regions || ['All 16 Regions of Ghana'],
+    minFundingAmount: Number(row.min_funding_amount) || 0,
+    maxFundingAmount: Number(row.max_funding_amount) || 0,
+    currency: row.currency || 'USD',
+    minReadinessScore: row.min_readiness_score ?? 50,
+    requiresRegistration: Boolean(row.requires_registration),
+    requiredLegalTypes: row.required_legal_types || [],
+    requiresBankStatements: Boolean(row.requires_bank_statements),
+    requiresTaxClearance: Boolean(row.requires_tax_clearance),
+    openingDate: row.opening_date || null,
+    closingDate: row.closing_date || null,
+    isAnnualRecurring: Boolean(row.is_annual_recurring),
+    typicalOpenMonth: row.typical_open_month || undefined,
+    typicalCloseMonth: row.typical_close_month || undefined,
+    deadlineTimezone: row.deadline_timezone || 'Africa/Accra',
+    applicationMethod: row.application_method || '',
+    hasApplicationFee: Boolean(row.has_application_fee),
+    status: row.status || 'pending_verification',
+    verifiedBy: row.verified_by || null,
+    verifiedAt: row.verified_at || null,
+    donorFocus: row.donor_focus || '',
+    internalNotes: row.internal_notes || ''
+  };
+}
+
 export const grantService = {
   getGrants() {
     const saved = localStorage.getItem(LOCAL_GRANTS_KEY);
@@ -1279,6 +1352,41 @@ export const grantService = {
     return grants.find(g => g.id === grantId) || null;
   },
 
+  async syncGrantsFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getGrants();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getGrants();
+
+      const { data, error } = await supabase
+        .from('grant_opportunities')
+        .select('*')
+        .order('closing_date', { ascending: true });
+
+      if (error || !Array.isArray(data)) return this.getGrants();
+
+      if (data.length === 0) {
+        const seededRows = deduplicateGrants(SEEDED_GRANTS).map(mapGrantToRow);
+        await supabase.from('grant_opportunities').upsert(seededRows, { onConflict: 'id' });
+        return this.saveGrants(SEEDED_GRANTS);
+      }
+
+      const remoteMapped = data.map(mapRowToGrant);
+      const remoteIds = new Set(remoteMapped.map(g => g.id));
+      const missingSeeded = SEEDED_GRANTS.filter(g => !remoteIds.has(g.id));
+      if (missingSeeded.length > 0) {
+        await supabase
+          .from('grant_opportunities')
+          .upsert(missingSeeded.map(mapGrantToRow), { onConflict: 'id' });
+      }
+
+      return this.saveGrants(syncRecurringGrantCycles([...remoteMapped, ...missingSeeded]));
+    } catch (e) {
+      console.warn('Supabase grants sync skipped:', e);
+      return this.getGrants();
+    }
+  },
+
   async verifyGrantOpportunity(grantId, { officialSourceUrl, notes = '' }) {
     const currentStaff = authService.getCurrentUser();
     const grants = this.getGrants();
@@ -1300,6 +1408,20 @@ export const grantService = {
     });
 
     this.saveGrants(updated);
+    const verifiedRecord = updated.find(g => g.id === grantId);
+
+    if (isSupabaseConfigured && supabase && verifiedRecord) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase
+            .from('grant_opportunities')
+            .upsert(mapGrantToRow(verifiedRecord), { onConflict: 'id' });
+        }
+      } catch (e) {
+        console.warn('Supabase grant verification sync skipped:', e);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'grant_opportunity',
@@ -1309,7 +1431,7 @@ export const grantService = {
       notes: `Verified grant "${target.title}" against official source ${officialSourceUrl || target.officialSourceUrl}`
     });
 
-    return updated.find(g => g.id === grantId);
+    return verifiedRecord;
   },
 
   async createGrantOpportunity(data) {
@@ -1344,6 +1466,19 @@ export const grantService = {
 
     const updated = [newGrant, ...grants];
     this.saveGrants(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase
+            .from('grant_opportunities')
+            .upsert(mapGrantToRow(newGrant), { onConflict: 'id' });
+        }
+      } catch (e) {
+        console.warn('Supabase grant create sync skipped:', e);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'grant_opportunity',
@@ -1496,6 +1631,19 @@ export const grantService = {
     }));
 
     const updated = this.saveGrants([...prepared, ...grants]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase
+            .from('grant_opportunities')
+            .upsert(prepared.map(mapGrantToRow), { onConflict: 'id' });
+        }
+      } catch (e) {
+        console.warn('Supabase bulk grant sync skipped:', e);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'grant_opportunity',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, Search, Filter, ExternalLink, ShieldCheck, Users,
   Calendar, DollarSign, Award, Clock, Plus, CheckCircle2, AlertTriangle, Upload 
@@ -47,6 +47,12 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
   const refreshGrants = () => {
     setGrants(grantService.getGrants());
   };
+
+  useEffect(() => {
+    grantService.syncGrantsFromSupabase().then(synced => {
+      if (Array.isArray(synced)) setGrants(synced);
+    });
+  }, []);
 
   const sectors = ['All', ...ECONOMIC_SECTORS.map(s => s.value)];
 
