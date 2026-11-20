@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  Target, Search, Filter, ExternalLink, ShieldCheck, 
+  Target, Search, Filter, ExternalLink, ShieldCheck, Users,
   Calendar, DollarSign, Award, Clock, Plus, CheckCircle2, AlertTriangle 
 } from 'lucide-react';
 import { grantService } from '../services/grantService';
 import { authService } from '../services/authService';
+import { crmService } from '../services/crmService';
+import { matchingService } from '../services/matchingService';
 import { ECONOMIC_SECTORS } from '../data/sectors';
 
 export default function GrantCatalogueView({ onAdoptOpportunity }) {
   const [grants, setGrants] = useState(() => grantService.getGrants());
+  const [activeCases] = useState(() => crmService.getCases());
+  const [expandedRecGrantId, setExpandedRecGrantId] = useState(null);
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -39,17 +43,36 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
 
   const sectors = ['All', ...ECONOMIC_SECTORS.map(s => s.value)];
 
-  const filteredGrants = grants.filter(g => {
-    const matchesSearch = 
-      g.title.toLowerCase().includes(search.toLowerCase()) ||
-      g.fundingOrganization.toLowerCase().includes(search.toLowerCase()) ||
-      g.description.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesSector = sectorFilter === 'All' || g.targetSectors.includes(sectorFilter);
-    const matchesStatus = statusFilter === 'All' || g.status === statusFilter;
+  const statusOrder = {
+    verified_open: 0,
+    pending_verification: 1,
+    upcoming: 2,
+    closed: 3,
+    expired: 4
+  };
 
-    return matchesSearch && matchesSector && matchesStatus;
-  });
+  const filteredGrants = grants
+    .filter(g => {
+      const matchesSearch = 
+        g.title.toLowerCase().includes(search.toLowerCase()) ||
+        g.fundingOrganization.toLowerCase().includes(search.toLowerCase()) ||
+        g.description.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesSector = sectorFilter === 'All' || g.targetSectors.includes(sectorFilter);
+      const matchesStatus = statusFilter === 'All' || g.status === statusFilter;
+
+      return matchesSearch && matchesSector && matchesStatus;
+    })
+    .sort((a, b) => {
+      const orderA = statusOrder[a.status] ?? 5;
+      const orderB = statusOrder[b.status] ?? 5;
+      if (orderA !== orderB) return orderA - orderB;
+
+      // Within the same status, show earliest closing/opening date first
+      const dateA = a.status === 'upcoming' ? (a.openingDate || '9999-12-31') : (a.closingDate || '9999-12-31');
+      const dateB = b.status === 'upcoming' ? (b.openingDate || '9999-12-31') : (b.closingDate || '9999-12-31');
+      return dateA.localeCompare(dateB);
+    });
 
   const handleExecuteVerification = async (e) => {
     e.preventDefault();
@@ -242,6 +265,59 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
                     </span>
                   ))}
                 </div>
+
+                {/* Recommended Qualifying Clients */}
+                {(() => {
+                  const recommendations = matchingService.getRecommendedClientsForGrant(grant, activeCases);
+                  const isExpanded = expandedRecGrantId === grant.id;
+                  return (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedRecGrantId(isExpanded ? null : grant.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-bold transition ${
+                          recommendations.length > 0
+                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 hover:bg-emerald-100/70'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="flex items-center space-x-1.5">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>
+                            {recommendations.length > 0
+                              ? `${recommendations.length} Qualifying Client${recommendations.length > 1 ? 's' : ''} Recommended`
+                              : 'No Qualifying Clients Yet'}
+                          </span>
+                        </span>
+                        <span className="text-[11px] underline">{isExpanded ? 'Hide' : 'View'}</span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="mt-2 space-y-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
+                          {recommendations.length === 0 ? (
+                            <p className="text-[11px] text-slate-500 px-1 py-1">
+                              No active registered clients currently match this grant&apos;s sector, entity type, and region.
+                            </p>
+                          ) : (
+                            recommendations.map(({ clientCase, evaluation }) => (
+                              <div key={clientCase.id} className="bg-white rounded-lg p-2.5 border border-slate-200 flex items-center justify-between gap-2">
+                                <div>
+                                  <div className="font-bold text-slate-900">{clientCase.legalName}</div>
+                                  <div className="text-[10px] text-slate-500">
+                                    {clientCase.sector} &bull; {clientCase.applicantType} &bull; Score: {evaluation.clientScore}/100
+                                  </div>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${evaluation.badgeClass}`}>
+                                  {evaluation.missingInformation.length === 0 ? 'Strong Match' : `${evaluation.missingInformation.length} Gap(s)`}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Action Bar */}

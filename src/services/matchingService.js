@@ -97,6 +97,7 @@ export const matchingService = {
       missingInformation,
       disqualifyingReasons,
       recommendedAction,
+      clientScore,
       isAdoptable: classification.includes('Eligible') || classification.includes('Information Required') || classification.includes('Potential')
     };
   },
@@ -104,6 +105,23 @@ export const matchingService = {
   matchAllGrantsForCase(caseRecord) {
     const grants = grantService.getGrants();
     return grants.map(grant => this.evaluateMatch(caseRecord, grant));
+  },
+
+  getRecommendedClientsForGrant(grantRecord, cases = []) {
+    if (!grantRecord || !Array.isArray(cases)) return [];
+    return cases
+      .filter(c => c.status !== 'archived' && c.status !== 'closed' && c.status !== 'withdrawn')
+      .map(c => ({
+        clientCase: c,
+        evaluation: this.evaluateMatch(c, grantRecord)
+      }))
+      .filter(({ evaluation }) => evaluation.disqualifyingReasons.length === 0)
+      .sort((a, b) => {
+        const aMissing = a.evaluation.missingInformation.length;
+        const bMissing = b.evaluation.missingInformation.length;
+        if (aMissing !== bMissing) return aMissing - bMissing;
+        return (b.evaluation.clientScore || 0) - (a.evaluation.clientScore || 0);
+      });
   }
 };
 
