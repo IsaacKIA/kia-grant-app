@@ -1,7 +1,7 @@
 import { auditService } from './auditService';
 import { authService } from './authService';
 
-const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v8';
+const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v9';
 
 export const SEEDED_GRANTS = [
   // === November 2026 Grant Alert Additions (Ghana / Africa / Global Eligible & Verified Real) ===
@@ -984,6 +984,190 @@ export const SEEDED_GRANTS = [
     verifiedAt: '2026-11-20T18:00:00Z',
     donorFocus: 'Extraordinary contributions toward alleviating human suffering by mature, audited nonprofit organizations.',
     internalNotes: 'Annual recurring cycle; requires 5+ years of operation, audited financials, and >=USD 750k annual expenditure.'
+  },
+  // === Ghana & Africa MSME, Creative, Fashion, Tourism & Beauty Gap Fillers ===
+  {
+    id: 'grant-52',
+    opportunityCode: 'GRANT-TEF-2027',
+    title: 'Tony Elumelu Foundation (TEF) Entrepreneurship Programme',
+    fundingOrganization: 'Tony Elumelu Foundation',
+    officialSourceUrl: 'https://www.tonyelumelufoundation.org',
+    description: 'Pan-African flagship entrepreneurship programme providing USD 5,000 non-refundable seed capital, business training, and mentorship across all MSME sectors.',
+    targetSectors: ['General Commerce & Services', 'Agribusiness', 'Fashion & Textiles', 'Beauty & Personal Care', 'Tourism & Hospitality', 'Technology & Services', 'Creative Arts & Media'],
+    eligibleApplicantTypes: ['Startup', 'SME', 'Individual'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 5000,
+    maxFundingAmount: 5000,
+    currency: 'USD',
+    minReadinessScore: 35,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2027-01-01',
+    closingDate: '2027-03-01',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 1,
+    typicalCloseMonth: 3,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'TEFConnect Portal',
+    hasApplicationFee: false,
+    status: 'upcoming',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'African early-stage founders and MSMEs across all 54 African countries including Ghana.',
+    internalNotes: 'Annual recurring cycle (Jan 1 – Mar 1); prepares to open Jan 1, 2027.'
+  },
+  {
+    id: 'grant-53',
+    opportunityCode: 'GRANT-GEA-BIZBOX-2027',
+    title: 'GEA / Mastercard Foundation BizBox MSME & Youth Grant',
+    fundingOrganization: 'Ghana Enterprises Agency (GEA)',
+    officialSourceUrl: 'https://gea.gov.gh',
+    description: 'National Ghana youth and MSME support program providing startup kits, business acceleration grants, and technical training across trades, fashion, beauty, hospitality, and commerce.',
+    targetSectors: ['Fashion & Textiles', 'Beauty & Personal Care', 'Tourism & Hospitality', 'General Commerce & Services', 'Agribusiness', 'Manufacturing'],
+    eligibleApplicantTypes: ['SME', 'Startup', 'Individual', 'Cooperative'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage', 'Early-stage Growth'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 5000,
+    maxFundingAmount: 50000,
+    currency: 'GHS',
+    minReadinessScore: 35,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Limited Liability', 'Cooperative'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2026-09-01',
+    closingDate: '2027-06-30',
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'GEA Regional BAC / BizBox Portal',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'Ghanaian youth-owned and women-owned MSMEs, vocational trades, and local enterprise job creation.',
+    internalNotes: 'Active rolling cohorts through 2027 across all 16 regions of Ghana.'
+  },
+  {
+    id: 'grant-54',
+    opportunityCode: 'GRANT-NEIP-ADWUMAWURA-2026',
+    title: 'NEIP Adwumawura Youth Entrepreneurship & MSME Grant',
+    fundingOrganization: 'National Entrepreneurship and Innovation Programme (NEIP)',
+    officialSourceUrl: 'https://neip.gov.gh',
+    description: 'Government of Ghana flagship program supporting young Ghanaian entrepreneurs (ages 18–40) with business coaching and startup/growth grants across commerce, fashion, beauty, and hospitality.',
+    targetSectors: ['General Commerce & Services', 'Fashion & Textiles', 'Beauty & Personal Care', 'Tourism & Hospitality', 'Agribusiness'],
+    eligibleApplicantTypes: ['Startup', 'SME', 'Individual'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage', 'Early-stage Growth'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 10000,
+    maxFundingAmount: 100000,
+    currency: 'GHS',
+    minReadinessScore: 40,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2026-09-01',
+    closingDate: '2027-06-30',
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'NEIP Adwumawura Portal',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'Ghanaian youth-led MSMEs, job creation, and formalization support.',
+    internalNotes: 'Continuous cohorts in Ghana for founders aged 18-40.'
+  },
+  {
+    id: 'grant-55',
+    opportunityCode: 'GRANT-CREATION-AFRICA-GH',
+    title: 'Création Africa Ghana Incubation & Creative Grant',
+    fundingOrganization: 'Création Africa Ghana (French Embassy / Expertise France)',
+    officialSourceUrl: 'https://creationafricaghana.com',
+    description: 'Dedicated Ghana creative economy incubation program offering mentorship and direct grant funding up to EUR 30,000 for fashion, luxury, design, film, animation, and cultural ventures.',
+    targetSectors: ['Creative Arts & Media', 'Fashion & Textiles', 'Tourism & Hospitality'],
+    eligibleApplicantTypes: ['Startup', 'SME', 'Individual'],
+    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 10000,
+    maxFundingAmount: 30000,
+    currency: 'EUR',
+    minReadinessScore: 50,
+    requiresRegistration: true,
+    requiredLegalTypes: ['Sole Proprietorship', 'Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2026-10-01',
+    closingDate: '2027-03-31',
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Création Africa Ghana Application Portal',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'Ghanaian cultural and creative industries (fashion, design, audiovisual, publishing).',
+    internalNotes: 'Requires commitment to incubation training phase in Ghana.'
+  },
+  {
+    id: 'grant-56',
+    opportunityCode: 'GRANT-KUONYESHA-ART-2027',
+    title: 'Kuonyesha Art Fund (Pan-African Creative Grants)',
+    fundingOrganization: 'Kuonyesha Art Fund',
+    officialSourceUrl: 'https://on-the-move.org',
+    description: 'Pan-African creative grant offering up to USD 5,000 for socially engaged art, fashion & product design, visual arts, music, film, and publishing projects across Africa.',
+    targetSectors: ['Creative Arts & Media', 'Fashion & Textiles', 'NGO / Social Enterprise'],
+    eligibleApplicantTypes: ['Individual', 'NGO', 'Startup'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 1500,
+    maxFundingAmount: 5000,
+    currency: 'USD',
+    minReadinessScore: 35,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Company Limited by Guarantee (NGO)'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2026-10-01',
+    closingDate: '2027-02-28',
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Kuonyesha Online Submission',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'Socially engaged African artists, fashion designers, and cultural collectives.',
+    internalNotes: 'Open to creatives and collectives across Africa including Ghana.'
+  },
+  {
+    id: 'grant-57',
+    opportunityCode: 'GRANT-VILLGRO-AFRICA-2026',
+    title: 'Villgro Africa Incubation & Seed Funding Program',
+    fundingOrganization: 'Villgro Africa',
+    officialSourceUrl: 'https://villgroafrica.org',
+    description: 'Rolling Africa-focused incubator and seed financier ($20K–$150K) supporting early-stage impact-driven MSMEs in healthcare, agribusiness, climate, and essential commerce.',
+    targetSectors: ['Healthcare & Sanitation', 'Agribusiness', 'Climate & Renewable Energy', 'General Commerce & Services'],
+    eligibleApplicantTypes: ['Startup', 'SME'],
+    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 20000,
+    maxFundingAmount: 150000,
+    currency: 'USD',
+    minReadinessScore: 55,
+    requiresRegistration: true,
+    requiredLegalTypes: ['Limited Liability'],
+    requiresBankStatements: true,
+    requiresTaxClearance: false,
+    openingDate: '2026-09-01',
+    closingDate: '2027-06-30',
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Villgro Africa Rolling Application',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T20:50:00Z',
+    donorFocus: 'Early-stage African social enterprises and MSMEs scaling essential goods and services.',
+    internalNotes: 'Rolling intake; targets Africa-based impact enterprises.'
   }
 ];
 
@@ -1170,6 +1354,158 @@ export const grantService = {
     });
 
     return newGrant;
+  },
+
+  previewBulkImport(rawText) {
+    const trimmed = String(rawText || '').trim();
+    if (!trimmed) {
+      return { readyToImport: [], skipped: [] };
+    }
+
+    let parsedItems = [];
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      const parsed = JSON.parse(trimmed);
+      parsedItems = Array.isArray(parsed) ? parsed : [parsed];
+    } else {
+      parsedItems = trimmed
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'))
+        .map(line => {
+          const [
+            title = '',
+            fundingOrganization = '',
+            closingDate = '2027-06-30',
+            sector = 'NGO / Social Enterprise',
+            currency = 'USD',
+            minFundingAmount = '5000',
+            maxFundingAmount = '50000',
+            officialSourceUrl = 'https://official-funder-source.org',
+            description = ''
+          ] = line.split('|').map(part => part.trim());
+
+          return {
+            title,
+            fundingOrganization,
+            closingDate,
+            targetSectors: sector ? [sector] : ['NGO / Social Enterprise'],
+            currency: currency || 'USD',
+            minFundingAmount: Number(minFundingAmount) || 5000,
+            maxFundingAmount: Number(maxFundingAmount) || 50000,
+            officialSourceUrl: officialSourceUrl || 'https://official-funder-source.org',
+            description: description || `${title} funding opportunity eligible for Ghana and Africa.`
+          };
+        });
+    }
+
+    const existing = this.getGrants();
+    const seenTitleOrg = new Set(
+      existing.map(g => `${normalizeGrantKey(g.title)}::${normalizeGrantKey(g.fundingOrganization)}`)
+    );
+    const seenCodes = new Set(
+      existing.map(g => normalizeGrantKey(g.opportunityCode)).filter(Boolean)
+    );
+    const today = new Date().toISOString().split('T')[0];
+    const nonAfricaPattern = /\b(us only|usa only|united states only|eu only|europe only|uk only|canada only|india only|australia only|malaysia only|austria only|germany only)\b/i;
+
+    const readyToImport = [];
+    const skipped = [];
+
+    for (const raw of parsedItems) {
+      const title = String(raw.title || '').trim();
+      const org = String(raw.fundingOrganization || '').trim();
+      if (!title || !org) {
+        skipped.push({ title: title || '(Untitled)', reason: 'Missing title or funding organization' });
+        continue;
+      }
+
+      const key = `${normalizeGrantKey(title)}::${normalizeGrantKey(org)}`;
+      const codeKey = normalizeGrantKey(raw.opportunityCode);
+      if (seenTitleOrg.has(key) || (codeKey && seenCodes.has(codeKey))) {
+        skipped.push({ title, reason: `Duplicate (${org})` });
+        continue;
+      }
+
+      const closingDate = String(raw.closingDate || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(closingDate) && closingDate < today) {
+        skipped.push({ title, reason: `Expired (${closingDate})` });
+        continue;
+      }
+
+      const geoBlob = `${raw.description || ''} ${raw.donorFocus || ''} ${raw.internalNotes || ''} ${(raw.eligibleRegions || []).join(' ')}`;
+      if (nonAfricaPattern.test(geoBlob)) {
+        skipped.push({ title, reason: 'Excluded: Non-Ghana/Africa geographic restriction' });
+        continue;
+      }
+
+      seenTitleOrg.add(key);
+      if (codeKey) seenCodes.add(codeKey);
+
+      readyToImport.push({
+        title,
+        fundingOrganization: org,
+        officialSourceUrl: raw.officialSourceUrl || 'https://official-funder-source.org',
+        description: raw.description || `${title} funding opportunity.`,
+        targetSectors: Array.isArray(raw.targetSectors) && raw.targetSectors.length > 0
+          ? raw.targetSectors
+          : ['NGO / Social Enterprise'],
+        eligibleApplicantTypes: Array.isArray(raw.eligibleApplicantTypes) && raw.eligibleApplicantTypes.length > 0
+          ? raw.eligibleApplicantTypes
+          : ['NGO', 'SME', 'Startup'],
+        eligibleBusinessStages: Array.isArray(raw.eligibleBusinessStages) && raw.eligibleBusinessStages.length > 0
+          ? raw.eligibleBusinessStages
+          : ['Early-stage', 'Early-stage Growth'],
+        eligibleRegions: ['All 16 Regions of Ghana'],
+        minFundingAmount: Number(raw.minFundingAmount) || 5000,
+        maxFundingAmount: Number(raw.maxFundingAmount) || 50000,
+        currency: raw.currency || 'USD',
+        minReadinessScore: Number(raw.minReadinessScore) || 50,
+        requiresRegistration: raw.requiresRegistration ?? true,
+        requiredLegalTypes: Array.isArray(raw.requiredLegalTypes) && raw.requiredLegalTypes.length > 0
+          ? raw.requiredLegalTypes
+          : ['Limited Liability', 'Company Limited by Guarantee (NGO)'],
+        requiresBankStatements: Boolean(raw.requiresBankStatements),
+        requiresTaxClearance: Boolean(raw.requiresTaxClearance),
+        openingDate: raw.openingDate || today,
+        closingDate: closingDate || '2027-06-30',
+        donorFocus: raw.donorFocus || 'Ghana and Africa eligible funding opportunity.',
+        internalNotes: raw.internalNotes || 'Imported via Quick Import vetting pipeline.'
+      });
+    }
+
+    return { readyToImport, skipped };
+  },
+
+  async commitBulkImport(items, markVerified = false) {
+    if (!Array.isArray(items) || items.length === 0) return [];
+
+    const currentStaff = authService.getCurrentUser();
+    const grants = this.getGrants();
+    const now = new Date().toISOString();
+
+    const prepared = items.map((item, idx) => ({
+      id: `grant-imp-${Date.now().toString().slice(-5)}-${idx}`,
+      opportunityCode: item.opportunityCode || `GRANT-IMP-${Date.now().toString().slice(-4)}-${idx + 1}`,
+      status: markVerified ? 'verified_open' : 'pending_verification',
+      verifiedBy: markVerified ? currentStaff.id : null,
+      verifiedAt: markVerified ? now : null,
+      hasApplicationFee: false,
+      deadlineTimezone: 'Africa/Accra',
+      ...item,
+      createdAt: now
+    }));
+
+    const updated = this.saveGrants([...prepared, ...grants]);
+
+    await auditService.logEvent({
+      entityType: 'grant_opportunity',
+      entityId: prepared[0].id,
+      action: 'bulk_import_grants',
+      newState: { count: prepared.length, markVerified },
+      notes: `Bulk imported ${prepared.length} vetted Ghana/Africa grant opportunities`
+    });
+
+    return updated;
   }
 };
 
