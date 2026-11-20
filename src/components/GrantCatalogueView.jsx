@@ -195,6 +195,13 @@ export default function GrantCatalogueView({ onAdoptOpportunity }) {
                   </span>
                 </div>
 
+                {grant.isAnnualRecurring && (
+                  <div className="inline-flex items-center space-x-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <Calendar className="w-3 h-3" />
+                    <span>Annual Cycle &bull; Opens {grant.openingDate}</span>
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                   {grant.description}
                 </p>

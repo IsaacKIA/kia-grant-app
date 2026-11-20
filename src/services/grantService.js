@@ -1,7 +1,7 @@
 import { auditService } from './auditService';
 import { authService } from './authService';
 
-const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v3';
+const LOCAL_GRANTS_KEY = 'kia_grant_opportunities_v4';
 
 export const SEEDED_GRANTS = [
   {
@@ -814,8 +814,225 @@ export const SEEDED_GRANTS = [
     verifiedAt: '2026-11-20T15:00:00Z',
     donorFocus: 'Privacy-preserving decentralized apps, payment tools, and developer SDKs.',
     internalNotes: 'Rolling review; projects must integrate with Beldex network.'
+  },
+  // === Recurring Annual Ghana/Africa-Eligible Grants (Auto-rolls to current year when opening month arrives) ===
+  {
+    id: 'grant-28',
+    opportunityCode: 'GRANT-ANZISHA-ANNUAL',
+    title: 'Anzisha Fellowship Program for Young African Entrepreneurs',
+    fundingOrganization: 'Anzisha Prize / African Leadership Academy',
+    officialSourceUrl: 'https://anzishaprize.org',
+    description: 'Multi-year support, mentorship, and business acceleration for young African founders aged 15-22 leading active ventures across any sector.',
+    targetSectors: ['Agribusiness', 'Technology & Services', 'Manufacturing', 'Education & Training', 'NGO / Social Enterprise', 'General Commerce & Services'],
+    eligibleApplicantTypes: ['Startup', 'Individual', 'SME'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 2500,
+    maxFundingAmount: 25000,
+    currency: 'USD',
+    minReadinessScore: 35,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Sole Proprietorship', 'Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2027-08-01',
+    closingDate: '2027-11-10',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 8,
+    typicalCloseMonth: 11,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Anzisha Online Application',
+    hasApplicationFee: false,
+    status: 'upcoming',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T15:30:00Z',
+    donorFocus: 'Africa-wide youth entrepreneurship (ages 15-22) creating jobs.',
+    internalNotes: 'Annual recurring cycle (typically Aug-Nov). Automatically flags pending verification when opening month arrives.'
+  },
+  {
+    id: 'grant-29',
+    opportunityCode: 'GRANT-FOODTECH500-ANNUAL',
+    title: 'FoodTech 500: AgriFoodTech Startups & Scaleups',
+    fundingOrganization: 'Forward Fooding',
+    officialSourceUrl: 'https://forwardfooding.com/foodtech500/',
+    description: 'Global ranking and investor/corporate visibility platform for AgriFoodTech startups and scaleups across food, agtech, and sustainability.',
+    targetSectors: ['Agribusiness', 'Technology & Services', 'Manufacturing'],
+    eligibleApplicantTypes: ['Startup', 'SME'],
+    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth', 'Established Scaling'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 5000,
+    maxFundingAmount: 50000,
+    currency: 'USD',
+    minReadinessScore: 55,
+    requiresRegistration: true,
+    requiredLegalTypes: ['Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2027-08-15',
+    closingDate: '2027-11-15',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 8,
+    typicalCloseMonth: 11,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Forward Fooding Portal',
+    hasApplicationFee: false,
+    status: 'upcoming',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T15:30:00Z',
+    donorFocus: 'AgriFoodTech innovation, sustainable food systems, and global investor exposure.',
+    internalNotes: 'Annual recurring cycle (typically Aug-Nov).'
+  },
+  {
+    id: 'grant-30',
+    opportunityCode: 'GRANT-IMAGINEH2O-ANNUAL',
+    title: 'Imagine H2O Accelerator for Water Startups',
+    fundingOrganization: 'Imagine H2O',
+    officialSourceUrl: 'https://www.imagineh2o.org',
+    description: 'Global accelerator providing entrepreneurial training, pilot capital, and utility/corporate deployment access for water and WASH startups.',
+    targetSectors: ['Healthcare & Sanitation', 'Climate & Renewable Energy', 'Agribusiness', 'Technology & Services'],
+    eligibleApplicantTypes: ['Startup', 'SME'],
+    eligibleBusinessStages: ['Early-stage', 'Early-stage Growth'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 10000,
+    maxFundingAmount: 100000,
+    currency: 'USD',
+    minReadinessScore: 55,
+    requiresRegistration: true,
+    requiredLegalTypes: ['Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2027-09-01',
+    closingDate: '2027-11-20',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 9,
+    typicalCloseMonth: 11,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Imagine H2O Online Application',
+    hasApplicationFee: false,
+    status: 'upcoming',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T15:30:00Z',
+    donorFocus: 'Water quality, wastewater, clean water access, and climate-resilient WASH.',
+    internalNotes: 'Annual recurring cycle (typically Sep-Nov).'
+  },
+  {
+    id: 'grant-31',
+    opportunityCode: 'GRANT-CEPS-CLIMATE-ANNUAL',
+    title: 'CEPS Climate Leadership Programme',
+    fundingOrganization: 'Centre for European Policy Studies',
+    officialSourceUrl: 'https://www.ceps.eu',
+    description: 'Fully funded training and Brussels policy fellowship for young climate entrepreneurs, advocates, and policy leaders aged 20-30 worldwide.',
+    targetSectors: ['Climate & Renewable Energy', 'NGO / Social Enterprise', 'Education & Training'],
+    eligibleApplicantTypes: ['Individual', 'NGO', 'Startup'],
+    eligibleBusinessStages: ['Idea / Pre-revenue', 'Early-stage'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 2000,
+    maxFundingAmount: 10000,
+    currency: 'USD',
+    minReadinessScore: 45,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered', 'Company Limited by Guarantee (NGO)', 'Limited Liability'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2027-09-01',
+    closingDate: '2027-11-11',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 9,
+    typicalCloseMonth: 11,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'CEPS Online Application',
+    hasApplicationFee: false,
+    status: 'upcoming',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T15:30:00Z',
+    donorFocus: 'Youth climate action, green entrepreneurship, and policy leadership.',
+    internalNotes: 'Annual recurring cycle (typically Sep-Nov); covers travel, visa, and accommodation.'
+  },
+  {
+    id: 'grant-32',
+    opportunityCode: 'GRANT-BLUEOCEAN-2027',
+    title: 'Blue Ocean Student Entrepreneur Competition',
+    fundingOrganization: 'Blue Ocean Student Entrepreneur Competition',
+    officialSourceUrl: 'https://blueoceancompetition.org',
+    description: 'Global virtual pitch competition for high school entrepreneurs worldwide (ages 14-18) with regional Africa winner prizes.',
+    targetSectors: ['Education & Training', 'Technology & Services', 'General Commerce & Services'],
+    eligibleApplicantTypes: ['Individual'],
+    eligibleBusinessStages: ['Idea / Pre-revenue'],
+    eligibleRegions: ['All 16 Regions of Ghana'],
+    minFundingAmount: 500,
+    maxFundingAmount: 1000,
+    currency: 'USD',
+    minReadinessScore: 30,
+    requiresRegistration: false,
+    requiredLegalTypes: ['Unregistered'],
+    requiresBankStatements: false,
+    requiresTaxClearance: false,
+    openingDate: '2026-09-01',
+    closingDate: '2027-02-21',
+    isAnnualRecurring: true,
+    typicalOpenMonth: 9,
+    typicalCloseMonth: 2,
+    deadlineTimezone: 'Africa/Accra',
+    applicationMethod: 'Blue Ocean Pitch Portal',
+    hasApplicationFee: false,
+    status: 'verified_open',
+    verifiedBy: 'staff-01',
+    verifiedAt: '2026-11-20T15:30:00Z',
+    donorFocus: 'Student entrepreneurship and blue-ocean business strategy.',
+    internalNotes: 'Annual recurring cycle; current 2027 cycle closes Feb 21, 2027.'
   }
 ];
+
+function shiftDateYear(dateStr, targetYear) {
+  if (!dateStr || typeof dateStr !== 'string') return dateStr;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${targetYear}-${parts[1]}-${parts[2]}`;
+}
+
+function syncRecurringGrantCycles(grants) {
+  const today = new Date().toISOString().split('T')[0];
+  let changed = false;
+
+  const updated = grants.map(g => {
+    if (!g.isAnnualRecurring || !g.openingDate || !g.closingDate) return g;
+
+    let openDate = g.openingDate;
+    let closeDate = g.closingDate;
+    const spansTwoYears = openDate.slice(5) > closeDate.slice(5);
+
+    // If current cycle has already closed, automatically advance to next year's cycle
+    if (today > closeDate) {
+      const nextCloseYear = Number(closeDate.slice(0, 4)) + 1;
+      const nextOpenYear = spansTwoYears ? nextCloseYear - 1 : nextCloseYear;
+      openDate = shiftDateYear(openDate, nextOpenYear);
+      closeDate = shiftDateYear(closeDate, nextCloseYear);
+      changed = true;
+      return {
+        ...g,
+        openingDate: openDate,
+        closingDate: closeDate,
+        status: today >= openDate ? 'pending_verification' : 'upcoming'
+      };
+    }
+
+    // If opening month/date has arrived for an upcoming recurring grant, trigger pending verification
+    if (g.status === 'upcoming' && today >= openDate && today <= closeDate) {
+      changed = true;
+      return {
+        ...g,
+        status: 'pending_verification'
+      };
+    }
+
+    return g;
+  });
+
+  if (changed) {
+    localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
 
 export const grantService = {
   getGrants() {
@@ -823,13 +1040,16 @@ export const grantService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return syncRecurringGrantCycles(parsed);
+        }
       } catch (e) {
         console.error('Failed to parse saved grants:', e);
       }
     }
-    localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(SEEDED_GRANTS));
-    return SEEDED_GRANTS;
+    const synced = syncRecurringGrantCycles(SEEDED_GRANTS);
+    localStorage.setItem(LOCAL_GRANTS_KEY, JSON.stringify(synced));
+    return synced;
   },
 
   saveGrants(list) {
