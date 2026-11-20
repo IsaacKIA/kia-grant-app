@@ -87,17 +87,64 @@ export default function AutomationControlView({ onNavigateCase }) {
       </div>
 
       {lastReminderSummary && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <strong className="font-bold">Client Reminder Dispatch Complete:</strong>{' '}
-            {lastReminderSummary.totalQueued} client(s) checked — {lastReminderSummary.sentEmailCount} email(s) and {lastReminderSummary.sentWhatsappCount} WhatsApp message(s) sent
-            {lastReminderSummary.mode !== 'supabase_edge_function' && (
-              <span className="text-emerald-700"> (deploy `send-client-reminders` Edge Function + provider keys to deliver live messages)</span>
-            )}.
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <strong className="font-bold">Client Reminder Check Complete:</strong>{' '}
+              {lastReminderSummary.totalQueued} client(s) need a follow-up
+              {lastReminderSummary.sentEmailCount + lastReminderSummary.sentWhatsappCount > 0 && (
+                <span> ({lastReminderSummary.sentEmailCount} email, {lastReminderSummary.sentWhatsappCount} WhatsApp auto-sent)</span>
+              )}.
+            </div>
+            <span className="font-mono text-[11px] text-emerald-700">
+              {new Date(lastReminderSummary.dispatchedAt).toLocaleTimeString()}
+            </span>
           </div>
-          <span className="font-mono text-[11px] text-emerald-700">
-            {new Date(lastReminderSummary.dispatchedAt).toLocaleTimeString()}
-          </span>
+
+          {lastReminderSummary.reminders?.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-emerald-200">
+              {lastReminderSummary.reminders.map((r, idx) => {
+                const bodyText = r.reason === 'expiring_upload_link'
+                  ? `Hello ${r.contactName || r.clientName}, your KIA-Start Up Consult document upload link expires soon. Please upload your remaining documents here: ${r.uploadUrl || ''}`
+                  : `Hello ${r.contactName || r.clientName}, we still need ${r.missingCount || 'your'} required document(s) for ${r.clientName}. ${r.uploadUrl ? `Upload securely here: ${r.uploadUrl}` : 'Please contact your grant officer.'}`;
+                const cleanDigits = (r.whatsappPhone || '').replace(/[^\d]/g, '');
+                const waDigits = cleanDigits.startsWith('0') && cleanDigits.length === 10 ? `233${cleanDigits.slice(1)}` : cleanDigits;
+                const waHref = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(bodyText)}` : null;
+                const mailHref = r.email ? `mailto:${r.email}?subject=${encodeURIComponent(`Document Reminder: ${r.clientName}`)}&body=${encodeURIComponent(bodyText)}` : null;
+
+                return (
+                  <div key={idx} className="bg-white rounded-xl p-3 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <strong className="text-slate-900">{r.clientName}</strong>
+                      <span className="text-slate-500 ml-2">
+                        {r.reason === 'expiring_upload_link' ? 'Upload link expiring soon' : `${r.missingCount} missing document(s)`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {waHref && (
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition"
+                        >
+                          Send WhatsApp
+                        </a>
+                      )}
+                      {mailHref && (
+                        <a
+                          href={mailHref}
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] transition"
+                        >
+                          Send Email
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
