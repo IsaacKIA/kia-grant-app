@@ -1,5 +1,11 @@
 import { authService, STAFF_USERS } from './authService';
 import { auditService } from './auditService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val) {
+  return typeof val === 'string' && UUID_REGEX.test(val);
+}
 
 export const CASE_STATUS_CONFIG = {
   intake: { label: 'Intake / New', color: 'bg-slate-100 text-slate-700 border-slate-300' },
@@ -254,6 +260,77 @@ export const crmService = {
     return computed;
   },
 
+  async syncCasesFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getCases();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getCases();
+
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*, organizations(*), contacts(*)')
+        .order('created_at', { ascending: false });
+
+      if (error || !Array.isArray(data)) {
+        console.warn('Supabase cases sync error:', error?.message);
+        return this.getCases();
+      }
+
+      const existingLocal = this.getCases();
+      const mapped = data.map((row, idx) => {
+        const org = Array.isArray(row.organizations) ? row.organizations[0] : row.organizations;
+        const contact = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
+        const cached = existingLocal.find(c => c.id === row.id || c.caseNumber === row.case_number);
+
+        return {
+          id: row.id,
+          organizationId: row.organization_id,
+          primaryContactId: row.primary_contact_id,
+          caseNumber: row.case_number,
+          legalName: org?.legal_name || cached?.legalName || row.case_number,
+          tradingName: org?.trading_name || org?.legal_name || cached?.tradingName || row.case_number,
+          applicantType: org?.applicant_type || cached?.applicantType || 'SME',
+          sector: org?.sector || cached?.sector || 'General Commerce & Services',
+          businessStage: org?.business_stage || cached?.businessStage || 'Early-stage Growth',
+          region: org?.region || cached?.region || 'Greater Accra',
+          registrationNumber: org?.registration_number || cached?.registrationNumber || '',
+          tinNumber: org?.tin_number || cached?.tinNumber || '',
+          primaryContact: {
+            fullName: contact?.full_name || cached?.primaryContact?.fullName || 'Primary Contact',
+            title: contact?.title || cached?.primaryContact?.title || 'Founder / Representative',
+            phone: contact?.phone_primary || cached?.primaryContact?.phone || '',
+            email: contact?.email || cached?.primaryContact?.email || '',
+            whatsapp: contact?.phone_whatsapp || contact?.phone_primary || cached?.primaryContact?.whatsapp || ''
+          },
+          currentOfficerId: row.current_officer_id || cached?.currentOfficerId || STAFF_USERS[0]?.id || 'staff-01',
+          status: row.status || 'intake',
+          onboardingDate: row.onboarding_date || (row.created_at ? row.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+          lastActivityAt: row.last_activity_at || row.updated_at || row.created_at || new Date().toISOString(),
+          nextActionDescription: row.next_action_description || cached?.nextActionDescription || '',
+          nextActionDueDate: row.next_action_due_date || cached?.nextActionDueDate || '',
+          waitingReason: row.waiting_reason || '',
+          inactivityFlag: Boolean(row.inactivity_flag),
+          engagementFee: cached?.engagementFee || {
+            invoiceNumber: `INV-2026-${String(idx + 1).padStart(4, '0')}`,
+            amountDue: 200,
+            amountPaid: row.status !== 'onboarding_fee_pending' && row.status !== 'intake' ? 200 : 0,
+            isVerified: row.status !== 'onboarding_fee_pending' && row.status !== 'intake',
+            verifiedBy: null,
+            transactionRef: '',
+            paymentMethod: 'momo_mtn'
+          },
+          targetGrantSize: cached?.targetGrantSize || 'GHS 50,000 – GHS 200,000',
+          activeApplicationsCount: cached?.activeApplicationsCount || 0
+        };
+      });
+
+      return this.saveCases(mapped);
+    } catch (e) {
+      console.warn('Supabase cases sync skipped:', e);
+      return this.getCases();
+    }
+  },
+
   async getCaseById(caseId) {
     const cases = this.getCases();
     return cases.find(c => c.id === caseId) || null;
@@ -290,9 +367,76 @@ export const crmService = {
 
     const caseNumber = `KIA-CASE-2026-${String(cases.length + 1).padStart(4, '0')}`;
     const invoiceNumber = `INV-2026-${String(cases.length + 1).padStart(4, '0')}`;
+    let newCaseId = `case-${Date.now().toString().slice(-5)}`;
+    let organizationId = null;
+    let primaryContactId = null;
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const officerUuid = isUuid(assignedOfficerId)
+          ? assignedOfficerId
+          : (isUuid(currentStaff?.id) ? currentStaff.id : null);
+
+        const { data: orgRow, error: orgErr } = await supabase
+          .from('organizations')
+          .insert({
+            legal_name: legalName.trim(),
+            trading_name: tradingName ? tradingName.trim() : legalName.trim(),
+            applicant_type: applicantType,
+            sector,
+            business_stage: businessStage,
+            region,
+            registration_number: registrationNumber || null,
+            tin_number: tinNumber || null,
+            created_by: isUuid(currentStaff?.id) ? currentStaff.id : null
+          })
+          .select()
+          .single();
+
+        if (orgErr) throw new Error(`Could not save organization to Supabase: ${orgErr.message}`);
+        organizationId = orgRow.id;
+
+        const { data: contactRow, error: contactErr } = await supabase
+          .from('contacts')
+          .insert({
+            organization_id: organizationId,
+            full_name: primaryContact.fullName,
+            title: primaryContact.title || 'Founder / Representative',
+            email: primaryContact.email || null,
+            phone_primary: primaryContact.phone,
+            phone_whatsapp: primaryContact.whatsapp || primaryContact.phone,
+            is_primary: true
+          })
+          .select()
+          .single();
+
+        if (contactErr) throw new Error(`Could not save contact to Supabase: ${contactErr.message}`);
+        primaryContactId = contactRow.id;
+
+        const { data: caseRow, error: caseErr } = await supabase
+          .from('cases')
+          .insert({
+            case_number: caseNumber,
+            organization_id: organizationId,
+            primary_contact_id: primaryContactId,
+            status: 'onboarding_fee_pending',
+            current_officer_id: officerUuid,
+            next_action_description: 'Verify initial engagement fee payment and issue formal onboarding checklist.',
+            next_action_due_date: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0]
+          })
+          .select()
+          .single();
+
+        if (caseErr) throw new Error(`Could not save case to Supabase: ${caseErr.message}`);
+        newCaseId = caseRow.id;
+      }
+    }
 
     const newCase = {
-      id: `case-${Date.now().toString().slice(-5)}`,
+      id: newCaseId,
+      organizationId,
+      primaryContactId,
       caseNumber,
       legalName: legalName.trim(),
       tradingName: tradingName ? tradingName.trim() : legalName.trim(),
@@ -367,6 +511,22 @@ export const crmService = {
 
     this.saveCases(updated);
 
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('cases')
+          .update({
+            status: newStatus,
+            next_action_description: nextActionDescription || current.nextActionDescription,
+            next_action_due_date: nextActionDueDate || current.nextActionDueDate,
+            waiting_reason: waitingReason,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('id', caseId);
+      }
+    }
+
     await auditService.logEvent({
       entityType: 'case',
       entityId: caseId,
@@ -401,6 +561,19 @@ export const crmService = {
     });
 
     this.saveCases(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(caseId) && isUuid(newOfficerId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('cases')
+          .update({
+            current_officer_id: newOfficerId,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('id', caseId);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'case',
@@ -446,6 +619,21 @@ export const crmService = {
     });
 
     this.saveCases(updated);
+
+    if (isSupabaseConfigured && supabase && isUuid(caseId)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('cases')
+          .update({
+            status: current.status === 'onboarding_fee_pending' ? 'documentation' : current.status,
+            next_action_description: 'Generate dynamic document checklist and issue client upload link.',
+            next_action_due_date: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('id', caseId);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'finance',

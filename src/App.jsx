@@ -95,12 +95,31 @@ export default function App() {
     setCases(crmService.getCases());
   };
 
-  const handleLoginSuccess = (staffUser) => {
+  const handleLoginSuccess = async (staffUser) => {
     const updated = authService.setCurrentUser(staffUser.id);
     setCurrentUser(updated);
     sessionStorage.setItem('kia_auth_user_id', updated.id);
     setAuthScreen('app');
+    setStaffUsers(authService.getAllStaffUsers());
+    await crmService.syncCasesFromSupabase();
+    setCases(crmService.getCases());
   };
+
+  useEffect(() => {
+    if (authScreen !== 'app') return;
+    let cancelled = false;
+    (async () => {
+      await authService.syncStaffFromSupabase();
+      await crmService.syncCasesFromSupabase();
+      if (!cancelled) {
+        const refreshedUser = authService.getCurrentUser();
+        if (refreshedUser) setCurrentUser(refreshedUser);
+        setStaffUsers(authService.getAllStaffUsers());
+        setCases(crmService.getCases());
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authScreen]);
 
   const handleSignOut = async () => {
     await authService.signOut();

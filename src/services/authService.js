@@ -135,9 +135,60 @@ function persistStaffUsers() {
 let currentStaffUser = null;
 const failedLoginTracker = new Map();
 
+function getRoleLabel(role) {
+  if (role === 'ceo') return 'Founder / CEO';
+  if (role === 'admin') return 'System Administrator';
+  return STAFF_ROLE_OPTIONS.find(r => r.role === role)?.label || role;
+}
+
 export const authService = {
   getCurrentUser() {
     return currentStaffUser;
+  },
+
+  async syncStaffFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return [...STAFF_USERS];
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [...STAFF_USERS];
+
+      const { data, error } = await supabase
+        .from('staff_users')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error || !Array.isArray(data) || data.length === 0) {
+        return [...STAFF_USERS];
+      }
+
+      const mapped = data.map(row => ({
+        id: row.id,
+        authUserId: row.auth_user_id || null,
+        email: row.email,
+        fullName: row.full_name,
+        role: row.role,
+        roleLabel: getRoleLabel(row.role),
+        phone: row.phone_number || 'Not provided',
+        isActive: row.is_active !== false,
+        isFounder: row.email.toLowerCase() === 'info@kiastartupconsult.com' || row.role === 'ceo',
+        createdAt: row.created_at
+      }));
+
+      STAFF_USERS.splice(0, STAFF_USERS.length, ...mapped);
+      persistStaffUsers();
+
+      if (currentStaffUser) {
+        const refreshedSelf = STAFF_USERS.find(
+          u => u.email.toLowerCase() === currentStaffUser.email.toLowerCase()
+        );
+        if (refreshedSelf) currentStaffUser = refreshedSelf;
+      }
+
+      return [...STAFF_USERS];
+    } catch (e) {
+      console.warn('Supabase staff sync skipped:', e);
+      return [...STAFF_USERS];
+    }
   },
 
   setCurrentUser(userOrId) {
@@ -178,6 +229,7 @@ export const authService = {
         });
         throw new Error('Invalid email or password.');
       }
+      await this.syncStaffFromSupabase();
     }
 
     const matchedUser = STAFF_USERS.find(u => u.email.toLowerCase() === cleanEmail);
@@ -312,8 +364,33 @@ export const authService = {
     }
 
     const roleMeta = STAFF_ROLE_OPTIONS.find(r => r.role === role);
+    let memberId = `staff-${String(STAFF_USERS.length + 1).padStart(2, '0')}-${Date.now().toString().slice(-3)}`;
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('staff_users')
+          .insert({
+            email: cleanEmail,
+            full_name: cleanName,
+            phone_number: (phone || '').trim() || null,
+            role,
+            is_active: true
+          })
+          .select()
+          .single();
+        if (insertErr) {
+          throw new Error(`Could not save staff member to Supabase: ${insertErr.message}`);
+        }
+        if (inserted?.id) {
+          memberId = inserted.id;
+        }
+      }
+    }
+
     const newMember = {
-      id: `staff-${String(STAFF_USERS.length + 1).padStart(2, '0')}-${Date.now().toString().slice(-3)}`,
+      id: memberId,
       email: cleanEmail,
       fullName: cleanName,
       role,
@@ -361,7 +438,7 @@ export const authService = {
 
     const member = STAFF_USERS.find(u => u.id === memberId);
     if (!member) throw new Error('Team member not found.');
-    if (member.isFounder || member.id === 'staff-01') {
+    if (member.isFounder || member.id === 'staff-01' || member.email.toLowerCase() === 'info@kiastartupconsult.com') {
       throw new Error('The Founder & CEO role cannot be modified.');
     }
 
@@ -369,6 +446,18 @@ export const authService = {
     const roleMeta = STAFF_ROLE_OPTIONS.find(r => r.role === newRole);
     member.role = newRole;
     member.roleLabel = (newRoleLabel || '').trim() || roleMeta?.label || newRole;
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { error: updErr } = await supabase
+          .from('staff_users')
+          .update({ role: newRole })
+          .eq('email', member.email);
+        if (updErr) throw new Error(`Could not update role in Supabase: ${updErr.message}`);
+      }
+    }
+
     persistStaffUsers();
 
     try {
@@ -395,11 +484,23 @@ export const authService = {
 
     const member = STAFF_USERS.find(u => u.id === memberId);
     if (!member) throw new Error('Team member not found.');
-    if (member.isFounder || member.id === 'staff-01') {
+    if (member.isFounder || member.id === 'staff-01' || member.email.toLowerCase() === 'info@kiastartupconsult.com') {
       throw new Error('The Founder & CEO account cannot be deactivated.');
     }
 
-    member.isActive = member.isActive === false ? true : false;
+    const nextActive = member.isActive === false ? true : false;
+    if (isSupabaseConfigured && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { error: updErr } = await supabase
+          .from('staff_users')
+          .update({ is_active: nextActive })
+          .eq('email', member.email);
+        if (updErr) throw new Error(`Could not update staff status in Supabase: ${updErr.message}`);
+      }
+    }
+
+    member.isActive = nextActive;
     persistStaffUsers();
     return member;
   },
