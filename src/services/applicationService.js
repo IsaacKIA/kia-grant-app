@@ -3,6 +3,7 @@ import { taskService } from './taskService';
 import { authService, STAFF_USERS } from './authService';
 import { crmService } from './crmService';
 import { grantService } from './grantService';
+import { financeService } from './financeService';
 import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 const LOCAL_APPLICATIONS_KEY = 'kia_grant_applications_v3';
@@ -504,7 +505,6 @@ export const applicationService = {
     // If awarded, calculate 5% contractual success fee obligation and issue invoice
     if (isAwarded && parsedAmount > 0) {
       const successFee = Math.round(parsedAmount * 0.05); // 5% standard success fee
-      const { financeService } = await import('./financeService');
       await financeService.createInvoice({
         caseId: target.caseId,
         clientName: target.clientName,

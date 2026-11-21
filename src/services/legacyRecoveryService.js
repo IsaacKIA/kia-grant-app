@@ -1,7 +1,39 @@
 import { INITIAL_CLIENTS } from '../data/initialClients';
 import { auditService } from './auditService';
+import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 const LEGACY_STAGING_KEY = 'kia_legacy_staging_v2';
+
+function mapLegacyToRow(c) {
+  return {
+    legacy_id: String(c.legacyId),
+    raw_data: c,
+    parsed_client_name: c.founderName || '',
+    parsed_business_name: c.businessName || '',
+    parsed_sector: c.sector || '',
+    parsed_commitment_fee_paid: Boolean(c.claimedFeePaid),
+    migration_status: c.quarantineStatus || 'quarantined',
+    reconciliation_notes: c.reconciliationNotes || '',
+    reconciled_by: isUuid(c.reconciledBy) ? c.reconciledBy : null,
+    reconciled_at: c.reconciledAt || null
+  };
+}
+
+function mapRowToLegacy(row) {
+  const base = row.raw_data && typeof row.raw_data === 'object' ? row.raw_data : {};
+  return {
+    ...base,
+    legacyId: isNaN(Number(row.legacy_id)) ? row.legacy_id : Number(row.legacy_id),
+    businessName: row.parsed_business_name || base.businessName || 'Unnamed Business',
+    founderName: row.parsed_client_name || base.founderName || 'Unknown Founder',
+    sector: row.parsed_sector || base.sector || 'Unspecified',
+    claimedFeePaid: row.parsed_commitment_fee_paid ?? Boolean(base.claimedFeePaid),
+    quarantineStatus: row.migration_status || base.quarantineStatus || 'quarantined',
+    reconciliationNotes: row.reconciliation_notes ?? (base.reconciliationNotes || ''),
+    reconciledBy: row.reconciled_by || base.reconciledBy || null,
+    reconciledAt: row.reconciled_at || base.reconciledAt || null
+  };
+}
 
 export const legacyRecoveryService = {
   getStagedLegacyClients() {
@@ -63,6 +95,36 @@ export const legacyRecoveryService = {
     return staged;
   },
 
+  async syncLegacyStagingFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getStagedLegacyClients();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getStagedLegacyClients();
+
+      const { data, error } = await supabase
+        .from('legacy_migration_staging')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error || !Array.isArray(data)) return this.getStagedLegacyClients();
+
+      if (data.length === 0) {
+        const localStaged = this.getStagedLegacyClients();
+        await supabase
+          .from('legacy_migration_staging')
+          .upsert(localStaged.map(mapLegacyToRow), { onConflict: 'legacy_id' });
+        return localStaged;
+      }
+
+      const mapped = data.map(mapRowToLegacy);
+      localStorage.setItem(LEGACY_STAGING_KEY, JSON.stringify(mapped));
+      return mapped;
+    } catch (e) {
+      console.warn('Supabase legacy staging sync skipped:', e);
+      return this.getStagedLegacyClients();
+    }
+  },
+
   updateLegacyRecord(legacyId, updates) {
     const clients = this.getStagedLegacyClients();
     const updated = clients.map(c => {
@@ -100,6 +162,20 @@ export const legacyRecoveryService = {
     });
 
     localStorage.setItem(LEGACY_STAGING_KEY, JSON.stringify(updated));
+    const reconciledRecord = updated.find(c => c.legacyId === legacyId);
+
+    if (isSupabaseConfigured && supabase && reconciledRecord) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase
+            .from('legacy_migration_staging')
+            .upsert(mapLegacyToRow(reconciledRecord), { onConflict: 'legacy_id' });
+        }
+      } catch (e) {
+        console.warn('Supabase legacy reconciliation sync skipped:', e);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'legacy_recovery',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, AlertTriangle, CheckCircle2, UserCheck, 
   Search, Filter, ArrowRight, FileText, DollarSign, Database 
@@ -19,10 +19,16 @@ export default function LegacyRecoveryView({ onReconciledCase }) {
 
   const officers = STAFF_USERS.filter(s => s.role === 'application_officer' || s.role === 'team_leader');
 
+  useEffect(() => {
+    legacyRecoveryService.syncLegacyStagingFromSupabase().then(synced => {
+      if (Array.isArray(synced)) setStagedClients(synced);
+    });
+  }, []);
+
   const filtered = stagedClients.filter(c => 
     c.businessName.toLowerCase().includes(search.toLowerCase()) ||
     c.founderName.toLowerCase().includes(search.toLowerCase()) ||
-    c.legacyId.toLowerCase().includes(search.toLowerCase())
+    String(c.legacyId).toLowerCase().includes(search.toLowerCase())
   );
 
   const handleOpenReconcile = (client) => {

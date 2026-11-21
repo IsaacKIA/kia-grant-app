@@ -1,8 +1,45 @@
 import { PILLARS, READINESS_TIERS } from '../data/criteria';
 import { authService } from './authService';
 import { auditService } from './auditService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const LOCAL_ASSESSMENTS_KEY = 'kia_readiness_assessments_v2';
+
+function mapAssessmentToRow(a) {
+  return {
+    id: a.id,
+    case_id: a.caseId,
+    client_name: a.clientName || '',
+    assessor_id: a.assessorId || null,
+    assessor_name: a.assessorName || null,
+    assessor_role: a.assessorRole || null,
+    total_score: Number(a.totalScore) || 0,
+    tier: a.tier || {},
+    responses: a.responses || {},
+    gaps: a.gaps || [],
+    assessment_notes: a.assessmentNotes || '',
+    framework_version: a.frameworkVersion || 'v2.0-2026',
+    assessed_at: a.assessedAt || new Date().toISOString()
+  };
+}
+
+function mapRowToAssessment(row) {
+  return {
+    id: row.id,
+    caseId: row.case_id,
+    clientName: row.client_name || '',
+    assessorId: row.assessor_id || '',
+    assessorName: row.assessor_name || '',
+    assessorRole: row.assessor_role || '',
+    totalScore: Number(row.total_score) || 0,
+    tier: row.tier || READINESS_TIERS[3],
+    responses: row.responses || {},
+    gaps: row.gaps || [],
+    assessmentNotes: row.assessment_notes || '',
+    frameworkVersion: row.framework_version || 'v2.0-2026',
+    assessedAt: row.assessed_at
+  };
+}
 
 export const readinessService = {
   getFramework() {
@@ -34,6 +71,28 @@ export const readinessService = {
     const all = this.getAllAssessments(caseId);
     if (all.length === 0) return null;
     return all.sort((a, b) => new Date(b.assessedAt) - new Date(a.assessedAt))[0];
+  },
+
+  async syncAssessmentsFromSupabase() {
+    if (!isSupabaseConfigured || !supabase) return this.getAllAssessments();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return this.getAllAssessments();
+
+      const { data, error } = await supabase
+        .from('readiness_assessments')
+        .select('*')
+        .order('assessed_at', { ascending: false });
+
+      if (error || !Array.isArray(data)) return this.getAllAssessments();
+
+      const mapped = data.map(mapRowToAssessment);
+      localStorage.setItem(LOCAL_ASSESSMENTS_KEY, JSON.stringify(mapped));
+      return mapped;
+    } catch (e) {
+      console.warn('Supabase readiness assessments sync skipped:', e);
+      return this.getAllAssessments();
+    }
   },
 
   calculateScore(responses) {
@@ -106,6 +165,19 @@ export const readinessService = {
     const existing = this.getAllAssessments();
     const updated = [assessmentRecord, ...existing];
     localStorage.setItem(LOCAL_ASSESSMENTS_KEY, JSON.stringify(updated));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase
+            .from('readiness_assessments')
+            .upsert(mapAssessmentToRow(assessmentRecord), { onConflict: 'id' });
+        }
+      } catch (e) {
+        console.warn('Supabase readiness assessment save skipped:', e);
+      }
+    }
 
     await auditService.logEvent({
       entityType: 'readiness_assessment',

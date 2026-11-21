@@ -26,7 +26,11 @@ export default function ReadinessCalculator({
   const readiness = readinessService.calculateScore(localResponses);
   const officers = STAFF_USERS.filter(s => s.role === 'application_officer' || s.role === 'team_leader' || s.role === 'ceo');
 
-  // Sync client change
+  // Sync client change & Supabase assessments
+  useEffect(() => {
+    readinessService.syncAssessmentsFromSupabase();
+  }, []);
+
   useEffect(() => {
     const current = clients.find(c => c.id === activeClientId);
     if (current) {

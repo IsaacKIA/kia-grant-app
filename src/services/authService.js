@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { auditService } from './auditService';
 
 const LOCAL_STAFF_USERS_KEY = 'kia_staff_users_v3';
 const LOCAL_CREDENTIALS_KEY = 'kia_staff_credentials_v3';
@@ -267,7 +268,6 @@ export const authService = {
     currentStaffUser = matchedUser;
 
     try {
-      const { auditService } = await import('./auditService');
       await auditService.logEvent({
         entityType: 'staff_session',
         entityId: matchedUser.id,
@@ -322,7 +322,6 @@ export const authService = {
     }
     if (actor) {
       try {
-        const { auditService } = await import('./auditService');
         await auditService.logEvent({
           entityType: 'staff_session',
           entityId: actor.id,
@@ -416,7 +415,6 @@ export const authService = {
     saveCredentialsMap(credsMap);
 
     try {
-      const { auditService } = await import('./auditService');
       await auditService.logEvent({
         entityType: 'staff_user',
         entityId: newMember.id,
@@ -461,7 +459,6 @@ export const authService = {
     persistStaffUsers();
 
     try {
-      const { auditService } = await import('./auditService');
       await auditService.logEvent({
         entityType: 'staff_user',
         entityId: member.id,

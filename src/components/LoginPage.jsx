@@ -77,12 +77,14 @@ export default function LoginPage({ onLoginSuccess, onBackToWelcome }) {
 
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="staff-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Staff Email
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="staff-email"
+                  name="email"
                   type="email"
                   autoComplete="username"
                   value={email}
@@ -95,12 +97,14 @@ export default function LoginPage({ onLoginSuccess, onBackToWelcome }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="staff-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="staff-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}

@@ -8,6 +8,7 @@
 
 import { auditService } from './auditService';
 import { authService } from './authService';
+import { crmService } from './crmService';
 import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 const INVOICES_STORAGE_KEY = 'kia_finance_invoices_v3';
@@ -412,7 +413,6 @@ class FinanceService {
     if (isSupabaseConfigured && supabase && isUuid(caseId)) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { crmService } = await import('./crmService');
         const caseObj = await crmService.getCaseById(caseId);
         if (caseObj?.organizationId && isUuid(caseObj.organizationId)) {
           const { data: row, error } = await supabase
@@ -655,7 +655,6 @@ class FinanceService {
     if (!inv || inv.invoiceType !== 'engagement_fee' || inv.status !== 'paid' || !inv.caseId) return;
 
     try {
-      const { crmService } = await import('./crmService');
       const cases = crmService.getCases();
       const target = cases.find(c => c.id === inv.caseId);
       if (!target) return;

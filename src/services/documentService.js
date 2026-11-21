@@ -1,6 +1,8 @@
 import { auditService } from './auditService';
 import { taskService } from './taskService';
 import { authService } from './authService';
+import { crmService } from './crmService';
+import { applicationService } from './applicationService';
 import { supabase, isSupabaseConfigured, isUuid } from '../lib/supabase';
 
 function mapSupabaseReqRow(row) {
@@ -478,8 +480,6 @@ export const documentService = {
     }
     const localVal = this.validateUploadToken(tokenString);
     if (!localVal.valid) return localVal;
-    const { crmService } = await import('./crmService');
-    const { applicationService } = await import('./applicationService');
     const localCase = await crmService.getCaseById(localVal.tokenRecord.caseId);
     const localApps = applicationService.getApplications().filter(a => a.caseId === localVal.tokenRecord.caseId);
     return {
